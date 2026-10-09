@@ -1,0 +1,206 @@
+{
+  "environment": {
+    "timestamp": "2026-10-09T16:37:14+0530",
+    "commit": "6ddad67",
+    "dirty": false,
+    "os": "Windows 11",
+    "cpu": "Intel64 Family 6 Model 170 Stepping 4, GenuineIntel",
+    "logical_cpus": 14,
+    "memory_gb": 31.5,
+    "python": "3.13.4",
+    "sqlite": "3.49.1",
+    "disk_note": ""
+  },
+  "config": {
+    "runs": 30,
+    "steps": 20,
+    "concurrency": [
+      1,
+      8,
+      32
+    ],
+    "repeat": 3
+  },
+  "latency_FULL": {
+    "live_step_ms": {
+      "n": 600,
+      "mean": 3.917,
+      "p50": 3.782,
+      "p95": 4.71,
+      "p99": 5.868,
+      "max": 27.224
+    },
+    "replayed_step_ms": {
+      "n": 200,
+      "mean": 0.036,
+      "p50": 0.034,
+      "p95": 0.046,
+      "p99": 0.135,
+      "max": 0.187
+    }
+  },
+  "latency_NORMAL": {
+    "live_step_ms": {
+      "n": 600,
+      "mean": 0.576,
+      "p50": 0.522,
+      "p95": 0.856,
+      "p99": 1.033,
+      "max": 11.169
+    },
+    "replayed_step_ms": {
+      "n": 200,
+      "mean": 0.026,
+      "p50": 0.025,
+      "p95": 0.031,
+      "p99": 0.041,
+      "max": 0.12
+    }
+  },
+  "throughput": [
+    {
+      "synchronous": "FULL",
+      "concurrency": 1,
+      "repeat": 0,
+      "elapsed_s": 5.322,
+      "steps_per_s": 225.5,
+      "runs_per_s": 11.27
+    },
+    {
+      "synchronous": "FULL",
+      "concurrency": 1,
+      "repeat": 1,
+      "elapsed_s": 4.822,
+      "steps_per_s": 248.9,
+      "runs_per_s": 12.44
+    },
+    {
+      "synchronous": "FULL",
+      "concurrency": 1,
+      "repeat": 2,
+      "elapsed_s": 3.189,
+      "steps_per_s": 376.2,
+      "runs_per_s": 18.81
+    },
+    {
+      "synchronous": "FULL",
+      "concurrency": 8,
+      "repeat": 0,
+      "elapsed_s": 2.873,
+      "steps_per_s": 417.6,
+      "runs_per_s": 20.88
+    },
+    {
+      "synchronous": "FULL",
+      "concurrency": 8,
+      "repeat": 1,
+      "elapsed_s": 3.548,
+      "steps_per_s": 338.2,
+      "runs_per_s": 16.91
+    },
+    {
+      "synchronous": "FULL",
+      "concurrency": 8,
+      "repeat": 2,
+      "elapsed_s": 2.876,
+      "steps_per_s": 417.2,
+      "runs_per_s": 20.86
+    },
+    {
+      "synchronous": "FULL",
+      "concurrency": 32,
+      "repeat": 0,
+      "elapsed_s": 3.358,
+      "steps_per_s": 357.3,
+      "runs_per_s": 17.87
+    },
+    {
+      "synchronous": "FULL",
+      "concurrency": 32,
+      "repeat": 1,
+      "elapsed_s": 3.903,
+      "steps_per_s": 307.5,
+      "runs_per_s": 15.37
+    },
+    {
+      "synchronous": "FULL",
+      "concurrency": 32,
+      "repeat": 2,
+      "elapsed_s": 4.865,
+      "steps_per_s": 246.7,
+      "runs_per_s": 12.33
+    },
+    {
+      "synchronous": "NORMAL",
+      "concurrency": 1,
+      "repeat": 0,
+      "elapsed_s": 1.151,
+      "steps_per_s": 1042.5,
+      "runs_per_s": 52.13
+    },
+    {
+      "synchronous": "NORMAL",
+      "concurrency": 1,
+      "repeat": 1,
+      "elapsed_s": 1.327,
+      "steps_per_s": 904.6,
+      "runs_per_s": 45.23
+    },
+    {
+      "synchronous": "NORMAL",
+      "concurrency": 1,
+      "repeat": 2,
+      "elapsed_s": 1.35,
+      "steps_per_s": 888.7,
+      "runs_per_s": 44.44
+    },
+    {
+      "synchronous": "NORMAL",
+      "concurrency": 8,
+      "repeat": 0,
+      "elapsed_s": 0.913,
+      "steps_per_s": 1314.0,
+      "runs_per_s": 65.7
+    },
+    {
+      "synchronous": "NORMAL",
+      "concurrency": 8,
+      "repeat": 1,
+      "elapsed_s": 0.972,
+      "steps_per_s": 1234.8,
+      "runs_per_s": 61.74
+    },
+    {
+      "synchronous": "NORMAL",
+      "concurrency": 8,
+      "repeat": 2,
+      "elapsed_s": 1.118,
+      "steps_per_s": 1073.0,
+      "runs_per_s": 53.65
+    },
+    {
+      "synchronous": "NORMAL",
+      "concurrency": 32,
+      "repeat": 0,
+      "elapsed_s": 0.935,
+      "steps_per_s": 1283.1,
+      "runs_per_s": 64.16
+    },
+    {
+      "synchronous": "NORMAL",
+      "concurrency": 32,
+      "repeat": 1,
+      "elapsed_s": 0.869,
+      "steps_per_s": 1381.5,
+      "runs_per_s": 69.08
+    },
+    {
+      "synchronous": "NORMAL",
+      "concurrency": 32,
+      "repeat": 2,
+      "elapsed_s": 0.843,
+      "steps_per_s": 1423.2,
+      "runs_per_s": 71.16
+    }
+  ]
+}

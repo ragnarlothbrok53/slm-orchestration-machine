@@ -31,7 +31,7 @@ Temporal workflow which echoed its input, with no model, tools or tests.
 - CLI: `sof serve` (API and worker in one process), `sof api`, `sof worker`, `sof run`.
 - Prometheus metrics for runs, steps, retries, replayed steps, LLM TTFT/tokens/errors, agent
   outcomes and tool calls. Structured logging in the same format as slm-runtime.
-- Tests (113): unit tests, engine semantics, API contract, contract tests against the real
+- Tests (124): unit tests, engine semantics, API contract, contract tests against the real
   slm-runtime v0.1.0 server, and crash recovery with a killed worker process. The tests were
   checked by mutation.
 - Benchmarks with committed results: journal overhead, crash recovery, overload/backpressure

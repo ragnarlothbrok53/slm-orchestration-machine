@@ -119,8 +119,8 @@ The sequence diagrams (a run, crash recovery), the thread model and the full fai
 | Leases + fencing tokens | A stalled ("zombie") worker can't overwrite the run that a new owner is executing. |
 | At-least-once steps | Exactly-once across systems is impossible; tools get an idempotency key instead. |
 | Failures are journaled too | Replay takes the same branch the workflow already took. |
-| Jittered backoff, `Retry-After` as floor | Measured: without jitter, synchronized retries left an overloaded server idle (4–7× slower batch). |
-| Client concurrency cap ≤ server capacity | Measured: oversubscribing costs about 2× makespan, even with good retries. |
+| Jittered backoff, `Retry-After` as floor | Measured: without jitter, synchronized retries left an overloaded server idle (4–6× slower batch). |
+| Client concurrency cap ≤ server capacity | Measured: oversubscribing costs 2.2–2.3× makespan, even with good retries. |
 | Streaming client | Cancellation reaches the model; client-side TTFT is visible. |
 | Two prompt protocols | Which format a 0.5B model follows best is an empirical question, so it's measured. |
 
@@ -134,7 +134,89 @@ recorded in each `summary.json`. Host: a Windows 11 laptop (Intel Core Ultra 7 1
 CPUs, 32 GB, CPU only) running normal background software. Methodology and caveats are in
 [docs/benchmarking.md](docs/benchmarking.md).
 
-<!-- RESULTS -->
+### 1. The orchestration makes a 0.5B model succeed more often
+
+Qwen2.5-0.5B-Instruct (Q4_K_M) on slm-runtime, greedy decoding, 42 arithmetic word problems
+(6 templates × 7, exact integer answers). The question is whether SOF gets a tiny model to
+*use a tool and finish*. It's a narrow test by design, not a general agent benchmark.
+
+| Mode | Correct | Held-out (39)¹ | Runs that answered | Model calls / run | p50 time / run |
+|---|---|---|---|---|---|
+| CoT baseline (1 call, no tools, "think step by step") | 16/42 (38%) | 16/39 | 42/42 | 1.0 | 5.7 s |
+| SOF agent, generic JSON protocol | 20/42 (48%) | 19/39 | 42/42 | 3.24 | 5.8 s |
+| SOF agent, Qwen-native protocol | **28/42 (67%)** | **26/39** | 42/42 | 2.0 | 5.0 s |
+
+¹ Three problems were inspected while designing the repeat guard and forced answer.
+
+- **Significant:** agent-qwen vs the CoT baseline. On the same problems it fixed 15 and broke 3;
+  exact McNemar test p = 0.008. agent-qwen vs agent-json: 8 fixed, 0 broken, p = 0.008.
+- **Not significant:** agent-json vs CoT (8 fixed vs 4 broken, p = 0.39). I'm not claiming the
+  JSON protocol beats the baseline.
+- **What the orchestration fixed:** all 84 agent runs ended with an answer. None crashed, failed
+  to parse or ran out of steps. Before the forced answer was added, the JSON protocol ended all 3
+  development problems with no answer at all, re-issuing the same tool call until its repair
+  budget ran out.
+- **What it can't fix:** every one of the 36 wrong agent answers comes from a wrong formula. No
+  tool call in those runs computed the right value. Both agents scored 0/7 on two templates: they
+  subtract the delivery fee in "price × qty + fee", and drop the multiplication in
+  "boxes × size − sold". In 23 of the 36 the answer is exactly what the model's own expression
+  computes; in the other 13 the model also mis-reported the tool's result (e.g. dropped a minus
+  sign).
+- **Protocol matters:** the format the model was trained on beat a generic one by 8 problems,
+  in fewer calls. That's measured on one model; it's the default worth testing, not a law.
+
+Raw rows, transcripts and the analysis are in
+[`benchmarks/results/eval-agent/`](benchmarks/results/eval-agent/) (`analyze_eval.py` reproduces
+the tests from `rows.csv`).
+
+### 2. Crash recovery: no lost steps, recovery time set by the lease
+
+A worker process is hard-killed at a random moment during a 10-step run, and a replacement starts
+immediately. 10 trials per lease length:
+
+| Lease | Runs completed | Steps lost | Kill → progress again (p50 / max) | Side effects executed twice |
+|---|---|---|---|---|
+| 2 s | 10/10 | 0 | 1.96 s / 2.34 s | 0 of 10 kills |
+| 5 s | 10/10 | 0 | 4.67 s / 5.01 s | 1 of 10 kills |
+
+The single duplicate is at-least-once semantics, visible: that kill landed between a step's side
+effect and its journal commit. This is the window `idempotency_key()` exists for. Finished steps
+were never re-executed in any trial (also asserted by `tests/test_crash.py`).
+
+### 3. Backpressure: match the client to the server, and jitter the retries
+
+slm-runtime with the fake engine (2 replicas, queue of 2, 0.2 s per call), 40 runs × 3 calls
+submitted at once; ideal makespan 12.0 s. Two interleaved repetitions:
+
+| SOF LLM concurrency | Makespan | p95 run latency | Server 503s | Every run completed |
+|---|---|---|---|---|
+| 2 (= replicas) | 14.2–14.7 s | 14.0–14.4 s | 0 | yes |
+| 4 (= replicas + queue) | **12.9 s** | 12.7 s | 0 | yes |
+| 16 (oversubscribed), jittered backoff | 29.0–29.7 s | 15.0–16.3 s | 122–125 | yes |
+| 16, *before jitter was added* | 123–182 s | 122–153 s | 162–192 | yes |
+
+- With the cap at replicas + queue, the batch finished about 8% over ideal.
+- Oversubscribing is absorbed (every 503 retried, every run done) but costs 2.2–2.3× the
+  makespan.
+- The first version of the retry policy had no jitter. Clients rejected together retried
+  together, and the batch ran 4–6× slower still. That's why `RetryPolicy` jitters and treats
+  `Retry-After` as a floor. The pre-fix result is kept in
+  [`results/overload-nojitter/`](benchmarks/results/overload-nojitter/).
+
+### 4. What durability costs
+
+No model; no-op steps, so this is engine plus journal only. Ranges are over three separate
+invocations:
+
+| | `SOF_DB_SYNCHRONOUS=FULL` (default) | `NORMAL` |
+|---|---|---|
+| Journaled step, p50 / p95 | 3.0–3.8 ms / 4.2–4.7 ms | 0.52–0.69 ms / 0.86–1.05 ms |
+| Replayed step (recovery), p50 | 0.014–0.034 ms | 0.022–0.025 ms |
+| Steps/s, 1 worker, 8 runs in flight | 367–417 | 1,235–1,546 |
+
+`FULL` is `fsync`-bound: a few hundred step commits per second per journal, flat with
+concurrency because SQLite has a single writer. A model call on this CPU takes 0.5–10 s, so the
+journal adds well under 1% to a model-bound step.
 
 ## Failure handling
 
@@ -313,7 +395,7 @@ and bounds are in [`config.py`](src/sof/config.py).
 
 ```bash
 uv sync                      # dev deps include slm-runtime v0.1.0 for the contract tests
-uv run pytest                # 124 tests, ~25 s
+uv run pytest                # 124 tests, ~30 s
 uv run ruff check . && uv run ruff format --check . && uv run mypy
 ```
 

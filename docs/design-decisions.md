@@ -48,12 +48,12 @@ journal afterwards: its `sqlite` extension reads the file directly.
 
 **Measured cost** (no model, so engine and journal only; ranges over repeated runs are in
 [benchmarking.md](benchmarking.md)):
-- A journaled step costs a few milliseconds with `FULL`, dominated by `fsync`, and below a
-  millisecond with `NORMAL`.
-- Replaying a journaled step costs about 0.02–0.04 ms.
-- Throughput: with `FULL`, one journal sustains a few hundred steps/s, because commits serialize on
-  SQLite's single writer, so adding concurrency doesn't raise it. With `NORMAL`, it's roughly
-  1,000–3,000 steps/s.
+- A journaled step costs 3.0–3.8 ms p50 with `FULL`, dominated by `fsync`, and 0.5–0.7 ms with
+  `NORMAL`.
+- Replaying a journaled step costs 0.01–0.03 ms.
+- Throughput: with `FULL`, one journal sustains 235–417 steps/s, because commits serialize on
+  SQLite's single writer, so adding concurrency barely raises it. With `NORMAL`, it's
+  900–1,700 steps/s.
 - In context: a model call on the benchmark CPU takes 0.5–10 s, so the journal adds well under 1%
   to a model-bound step.
 
@@ -107,7 +107,7 @@ monotonically increasing token does. This is tested in
 `test_expired_lease_is_reclaimed_and_old_owner_is_fenced`.
 
 **Measured.** With a hard kill and an immediate replacement worker, the replacement made progress
-again after a p50 of 1.9 s with a 2 s lease, and 4.5 s with a 5 s lease, over 10 trials each. All
+again after a p50 of 1.96 s with a 2 s lease, and 4.67 s with a 5 s lease, over 10 trials each. All
 20 runs completed and no steps were lost. Recovery time is set by the lease, which is the main
 setting to tune: shorter means faster recovery and more heartbeat writes.
 
@@ -147,8 +147,8 @@ keeps replay deterministic.
 
 **Why, measured.** The first version had no jitter. In `bench_overload`, 40 runs whose
 oversubscribed model calls were rejected together retried together, were rejected together again,
-and backed off further while the server sat idle. The batch took 123–182 s, against 12.8 s when
-not oversubscribed. With jitter it took 26–29 s. The pre-jitter result is kept in
+and backed off further while the server sat idle. The batch took 123–182 s, against 12.9 s when
+not oversubscribed. With jitter it took 29–30 s. The pre-jitter result is kept in
 `benchmarks/results/overload-nojitter/`.
 
 **Mapping of slm-runtime's contract** (`llm.py`):
@@ -175,9 +175,9 @@ deadline starts only once a slot is acquired.
 
 | cap | makespan | 503s | |
 |---|---|---|---|
-| 2 (= replicas) | 13.4–13.8 s | 0 | the replica idles during each client round-trip |
-| 4 (= replicas + queue) | 12.6–13.0 s | 0 | the queue hides the round-trip; ~6% over ideal |
-| 16 (oversubscribed) | 26–29 s | 120–123 | retries work but waste capacity and spread latency (p95 16–27 s) |
+| 2 (= replicas) | 14.2–14.7 s | 0 | the replica idles during each client round-trip |
+| 4 (= replicas + queue) | 12.9 s | 0 | the queue hides the round-trip; ~8% over ideal |
+| 16 (oversubscribed) | 29.0–29.7 s | 122–125 | retries work but waste capacity and spread latency (p95 15–16 s, p50 8 s) |
 
 The server's admission control (503) is a safety net, not a scheduler. It fails fast, but every
 rejection costs at least `Retry-After`. Keep the cap at or below replicas + queue. Note that

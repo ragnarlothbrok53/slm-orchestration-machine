@@ -1,8 +1,8 @@
 {
   "environment": {
-    "timestamp": "2026-10-09T16:09:04+0530",
-    "commit": "367c8c7",
-    "dirty": true,
+    "timestamp": "2026-10-09T16:38:08+0530",
+    "commit": "6ddad67",
+    "dirty": false,
     "os": "Windows 11",
     "cpu": "Intel64 Family 6 Model 170 Stepping 4, GenuineIntel",
     "logical_cpus": 14,
@@ -24,37 +24,37 @@
   "latency_FULL": {
     "live_step_ms": {
       "n": 600,
-      "mean": 3.958,
-      "p50": 3.887,
-      "p95": 4.828,
-      "p99": 5.659,
-      "max": 9.994
+      "mean": 3.55,
+      "p50": 3.389,
+      "p95": 4.45,
+      "p99": 5.866,
+      "max": 19.961
     },
     "replayed_step_ms": {
       "n": 200,
-      "mean": 0.023,
-      "p50": 0.02,
-      "p95": 0.039,
-      "p99": 0.073,
-      "max": 0.163
+      "mean": 0.032,
+      "p50": 0.03,
+      "p95": 0.036,
+      "p99": 0.061,
+      "max": 0.15
     }
   },
   "latency_NORMAL": {
     "live_step_ms": {
       "n": 600,
-      "mean": 0.901,
-      "p50": 0.857,
-      "p95": 1.306,
-      "p99": 1.732,
-      "max": 13.232
+      "mean": 0.666,
+      "p50": 0.619,
+      "p95": 0.992,
+      "p99": 1.219,
+      "max": 11.997
     },
     "replayed_step_ms": {
       "n": 200,
-      "mean": 0.04,
-      "p50": 0.036,
-      "p95": 0.048,
-      "p99": 0.148,
-      "max": 0.157
+      "mean": 0.026,
+      "p50": 0.022,
+      "p95": 0.042,
+      "p99": 0.072,
+      "max": 0.175
     }
   },
   "throughput": [
@@ -62,145 +62,145 @@
       "synchronous": "FULL",
       "concurrency": 1,
       "repeat": 0,
-      "elapsed_s": 5.839,
-      "steps_per_s": 205.5,
-      "runs_per_s": 10.28
+      "elapsed_s": 5.426,
+      "steps_per_s": 221.2,
+      "runs_per_s": 11.06
     },
     {
       "synchronous": "FULL",
       "concurrency": 1,
       "repeat": 1,
-      "elapsed_s": 5.949,
-      "steps_per_s": 201.7,
-      "runs_per_s": 10.09
+      "elapsed_s": 5.109,
+      "steps_per_s": 234.9,
+      "runs_per_s": 11.74
     },
     {
       "synchronous": "FULL",
       "concurrency": 1,
       "repeat": 2,
-      "elapsed_s": 4.215,
-      "steps_per_s": 284.7,
-      "runs_per_s": 14.23
+      "elapsed_s": 5.055,
+      "steps_per_s": 237.4,
+      "runs_per_s": 11.87
     },
     {
       "synchronous": "FULL",
       "concurrency": 8,
       "repeat": 0,
-      "elapsed_s": 3.887,
-      "steps_per_s": 308.7,
-      "runs_per_s": 15.44
+      "elapsed_s": 3.06,
+      "steps_per_s": 392.1,
+      "runs_per_s": 19.61
     },
     {
       "synchronous": "FULL",
       "concurrency": 8,
       "repeat": 1,
-      "elapsed_s": 3.698,
-      "steps_per_s": 324.5,
-      "runs_per_s": 16.22
+      "elapsed_s": 2.949,
+      "steps_per_s": 406.9,
+      "runs_per_s": 20.34
     },
     {
       "synchronous": "FULL",
       "concurrency": 8,
       "repeat": 2,
-      "elapsed_s": 3.225,
-      "steps_per_s": 372.1,
-      "runs_per_s": 18.61
+      "elapsed_s": 3.026,
+      "steps_per_s": 396.6,
+      "runs_per_s": 19.83
     },
     {
       "synchronous": "FULL",
       "concurrency": 32,
       "repeat": 0,
-      "elapsed_s": 3.696,
-      "steps_per_s": 324.7,
-      "runs_per_s": 16.24
+      "elapsed_s": 3.306,
+      "steps_per_s": 362.9,
+      "runs_per_s": 18.15
     },
     {
       "synchronous": "FULL",
       "concurrency": 32,
       "repeat": 1,
-      "elapsed_s": 4.338,
-      "steps_per_s": 276.6,
-      "runs_per_s": 13.83
+      "elapsed_s": 3.101,
+      "steps_per_s": 387.0,
+      "runs_per_s": 19.35
     },
     {
       "synchronous": "FULL",
       "concurrency": 32,
       "repeat": 2,
-      "elapsed_s": 5.823,
-      "steps_per_s": 206.1,
-      "runs_per_s": 10.3
+      "elapsed_s": 3.665,
+      "steps_per_s": 327.4,
+      "runs_per_s": 16.37
     },
     {
       "synchronous": "NORMAL",
       "concurrency": 1,
       "repeat": 0,
-      "elapsed_s": 1.29,
-      "steps_per_s": 930.4,
-      "runs_per_s": 46.52
+      "elapsed_s": 1.083,
+      "steps_per_s": 1108.5,
+      "runs_per_s": 55.43
     },
     {
       "synchronous": "NORMAL",
       "concurrency": 1,
       "repeat": 1,
-      "elapsed_s": 1.298,
-      "steps_per_s": 924.3,
-      "runs_per_s": 46.21
+      "elapsed_s": 1.038,
+      "steps_per_s": 1156.1,
+      "runs_per_s": 57.81
     },
     {
       "synchronous": "NORMAL",
       "concurrency": 1,
       "repeat": 2,
-      "elapsed_s": 1.462,
-      "steps_per_s": 820.9,
-      "runs_per_s": 41.05
+      "elapsed_s": 1.036,
+      "steps_per_s": 1158.6,
+      "runs_per_s": 57.93
     },
     {
       "synchronous": "NORMAL",
       "concurrency": 8,
       "repeat": 0,
-      "elapsed_s": 1.172,
-      "steps_per_s": 1024.2,
-      "runs_per_s": 51.21
+      "elapsed_s": 0.738,
+      "steps_per_s": 1626.1,
+      "runs_per_s": 81.31
     },
     {
       "synchronous": "NORMAL",
       "concurrency": 8,
       "repeat": 1,
-      "elapsed_s": 1.141,
-      "steps_per_s": 1051.9,
-      "runs_per_s": 52.59
+      "elapsed_s": 0.776,
+      "steps_per_s": 1546.1,
+      "runs_per_s": 77.31
     },
     {
       "synchronous": "NORMAL",
       "concurrency": 8,
       "repeat": 2,
-      "elapsed_s": 1.333,
-      "steps_per_s": 900.3,
-      "runs_per_s": 45.01
+      "elapsed_s": 0.825,
+      "steps_per_s": 1453.7,
+      "runs_per_s": 72.69
     },
     {
       "synchronous": "NORMAL",
       "concurrency": 32,
       "repeat": 0,
-      "elapsed_s": 1.205,
-      "steps_per_s": 996.2,
-      "runs_per_s": 49.81
+      "elapsed_s": 0.76,
+      "steps_per_s": 1578.6,
+      "runs_per_s": 78.93
     },
     {
       "synchronous": "NORMAL",
       "concurrency": 32,
       "repeat": 1,
-      "elapsed_s": 0.838,
-      "steps_per_s": 1431.3,
-      "runs_per_s": 71.57
+      "elapsed_s": 0.752,
+      "steps_per_s": 1595.5,
+      "runs_per_s": 79.77
     },
     {
       "synchronous": "NORMAL",
       "concurrency": 32,
       "repeat": 2,
-      "elapsed_s": 0.857,
-      "steps_per_s": 1400.5,
-      "runs_per_s": 70.02
+      "elapsed_s": 0.801,
+      "steps_per_s": 1498.9,
+      "runs_per_s": 74.95
     }
   ]
 }

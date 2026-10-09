@@ -29,11 +29,26 @@ machines. Compare the *ratios* within a benchmark, which were stable.
 
 Both `SOF_DB_SYNCHRONOUS` modes are measured.
 
-**Caveat.** Run-to-run variation on this host is large for sub-millisecond operations: whole
-invocations differed by up to 3.5× for `NORMAL`. The results below therefore give ranges over
-several invocations, not one run.
+**Caveat.** Sub-millisecond timings on this host vary between sessions: an earlier session
+(before benchmark logging was turned down to WARNING) measured `NORMAL` at 0.24–0.86 ms p50.
+The three back-to-back invocations reported here agree within 1.3×. Their raw results are in
+`results/engine/run{1,2,3}/`.
 
-<!-- ENGINE -->
+**Results** (commit `6ddad67`, ranges over the three invocations):
+
+| | `FULL` | `NORMAL` |
+|---|---|---|
+| Live step p50 / p95 / p99 | 3.0–3.8 / 4.2–4.7 / 5.9–6.2 ms | 0.52–0.69 / 0.86–1.05 / 1.0–1.2 ms |
+| Replayed step p50 | 0.014–0.034 ms | 0.022–0.025 ms |
+| Steps/s, 1 run in flight | 235–366 | 905–1,156 |
+| Steps/s, 8 in flight | 367–417 | 1,235–1,546 |
+| Steps/s, 32 in flight | 257–363 | 1,382–1,728 |
+
+**Reading it.** With `FULL`, every step costs an `fsync` (~3 ms on this SSD), and commits
+serialize on SQLite's single writer, so concurrency barely moves throughput. `NORMAL` skips the
+per-commit `fsync` in WAL mode; it is about 5× cheaper and scales a little with concurrency
+because commits batch better. Replay is essentially free (tens of microseconds per step, mostly
+pydantic decoding).
 
 ## 2. Crash recovery (`bench_recovery.py`)
 
@@ -50,7 +65,25 @@ supervisor would. 10 trials per lease length.
 - `re_executed`: step executions beyond 10.
 - `lost`: steps missing from the final journal.
 
-<!-- RECOVERY -->
+**Results** (commit `6ddad67`):
+
+| Lease | Completed | Lost steps | Recovery p50 | p95 | max | Duplicate executions |
+|---|---|---|---|---|---|---|
+| 2 s | 10/10 | 0 | 1.96 s | 2.30 s | 2.34 s | 0 in 10 trials |
+| 5 s | 10/10 | 0 | 4.67 s | 4.92 s | 5.01 s | 1 in 10 trials |
+
+An earlier session (commit `367c8c7` plus the then-uncommitted benchmark code) gave the same picture: 20/20 completed, 0 lost, p50 1.90 s
+and 4.54 s, and 1 duplicate in 20.
+
+**Reading it.**
+- *Recovery time.* It is roughly the time left on the dead worker's lease, plus up to one poll
+  interval, plus the replacement's start-up. A uniformly random kill time makes it vary between
+  ~0 and the lease. Shorter leases recover faster; the cost is one heartbeat write per run every
+  `lease_s / 3`.
+- *Duplicates.* A duplicate occurs only when the kill lands after a step's side effect and before
+  its journal commit. Here that window (an fsync-ed append, then a ~3 ms `FULL` commit) is a few
+  percent of each 0.3 s step, so roughly 1 duplicate in 20 kills is the expected order of
+  magnitude.
 
 ## 3. Overload and backpressure (`bench_overload.py`)
 
@@ -71,7 +104,33 @@ supervisor would. 10 trials per lease length.
 
 Every run must complete in every configuration.
 
-<!-- OVERLOAD -->
+**Results** (commit `6ddad67`, two interleaved repetitions):
+
+| Cap | Makespan | Run p50 | Run p95 | Server 503s | SOF retries | Completed |
+|---|---|---|---|---|---|---|
+| 2 | 14.2–14.7 s | 12.0–12.5 s | 14.0–14.4 s | 0 | 0 | 40/40 |
+| 4 | 12.9 s | 10.9–11.0 s | 12.7 s | 0 | 0 | 40/40 |
+| 16 | 29.0–29.7 s | 7.8–8.0 s | 15.0–16.3 s | 122–125 | 122–125 | 40/40 |
+
+And before jitter was added to `RetryPolicy` (`results/overload-nojitter/`, otherwise the same
+setup):
+
+| Cap | Makespan | Run p95 | Server 503s |
+|---|---|---|---|
+| 16 | 123–182 s | 122–153 s | 162–192 |
+
+**Reading it.**
+- *Cap = replicas.* The server is idle while each client round-trip completes, so the run takes
+  18–22% over ideal.
+- *Cap = replicas + queue.* The server's queue hides that gap: ~8% over ideal, and nothing is
+  rejected.
+- *Oversubscribed.* The server sheds about one request for every one it serves. Each rejection
+  costs at least `Retry-After` (1 s) on that call. Lucky runs finish *earlier* (p50 8 s) and
+  unlucky ones much later: shedding is unfair as well as slower.
+- *Without jitter.* Rejected clients retried in synchronized waves, collided again, and backed off
+  exponentially while the server sat idle. That's the reason for the jitter, and why
+  `Retry-After` is treated as a floor with jitter only added above it.
+- *Every row:* no run failed. The retry budget absorbed the load either way.
 
 ## 4. Task success with a real model (`eval_agent.py`)
 
@@ -106,7 +165,43 @@ expected integer.
 transcripts of failing runs on three problems (`arith-00`–`arith-02`). Accuracy is reported both
 on all 42 and on the 39 held-out problems.
 
-<!-- EVAL -->
+**Results** (source identical to commit `813bcd5`; see the note in `summary.json`):
+
+| Mode | Correct (42) | Held-out (39) | Answered | Calls / run | p50 / p95 time per run |
+|---|---|---|---|---|---|
+| `cot` | 16 (38%) | 16 | 42 | 1.0 | 5.7 / 12.6 s |
+| `agent-json` | 20 (48%) | 19 | 42 | 3.24 | 5.8 / 11.5 s |
+| `agent-qwen` | 28 (67%) | 26 | 42 | 2.0 | 5.0 / 7.7 s |
+
+**Paired comparisons** (same problems, exact McNemar; `analyze_eval.py`):
+
+| | only first right | only second right | p |
+|---|---|---|---|
+| cot vs agent-qwen | 3 | 15 | 0.008 |
+| agent-json vs agent-qwen | 0 | 8 | 0.008 |
+| cot vs agent-json | 4 | 8 | 0.39 |
+
+**By template** (7 problems each):
+
+| Template | cot | agent-json | agent-qwen |
+|---|---|---|---|
+| price × qty + fee | 2 | 0 | 0 |
+| give away, buy bags | 1 | 0 | 7 |
+| two-leg distance | 3 | 6 | 7 |
+| boxes × size − sold | 1 | 0 | 0 |
+| percent discount | 7 | 7 | 7 |
+| weekly savings − gift | 2 | 7 | 7 |
+
+**Where the agents fail.**
+- In all 36 wrong agent answers, no calculator call computed the expected value: the model wrote a
+  wrong formula.
+- In 23 of the 36, the final answer equals the value of the model's own expression. In the other
+  13, it also mis-reported the tool result, e.g. answering 627 when the calculator returned −627.
+- On "price × qty + fee", both agents wrote `price * qty - fee` on all 7 problems.
+- Using a tool doesn't help on what the model already does reliably (percent discount: 7/7 in
+  every mode).
+- It helps most where CoT arithmetic breaks down: multi-digit products, as in "weekly savings":
+  2/7 for CoT against 7/7 with a tool.
 
 ## Reproducing
 
