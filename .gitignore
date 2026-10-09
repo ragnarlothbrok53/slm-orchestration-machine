@@ -2,3 +2,23 @@
 .env
 .env.*
 !.env.example
+
+# Python
+__pycache__/
+*.py[oc]
+build/
+dist/
+*.egg-info
+.venv
+
+# Tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local state: the SQLite journal (and its WAL files), models, benchmark scratch
+*.db
+*.db-wal
+*.db-shm
+models/
+benchmarks/results/**/*.log
