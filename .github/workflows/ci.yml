@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-test:
+    name: Lint, type-check, tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      # Dev deps include slm-runtime v0.1.0 (from GitHub) for the contract tests.
+      - run: uv sync --frozen
+      - run: uv run ruff format --check src tests benchmarks
+      - run: uv run ruff check src tests benchmarks
+      - run: uv run mypy
+      # Unit, API, contract (real slm-runtime) and process-kill recovery tests.
+      - run: uv run pytest -v
+
+  docker:
+    name: Compose stack smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start slm-runtime (fake engine), API and a worker
+        env:
+          SLM_ENGINE: fake  # no model download in CI: tests the wiring, not the model
+        run: |
+          mkdir -p models
+          docker compose up -d --build --wait api
+          docker compose up -d worker
+      - name: A run goes API -> journal -> worker -> slm-runtime -> journal -> API
+        run: |
+          body=$(curl -fsS 'localhost:8080/v1/runs?wait=true&timeout_s=60' \
+            -H 'content-type: application/json' -d '{"question": "2+2?", "max_repairs": 0}')
+          echo "$body"
+          # The fake engine emits " tok0 tok1 ..." (not JSON), so the agent gives up after one
+          # repair-less attempt. The run itself must still complete through every component.
+          echo "$body" | grep -q '"status":"completed"'
+          echo "$body" | grep -q '"status":"max_repairs"'
+          curl -fsS localhost:8080/metrics | grep -q 'sof_runs{status="completed"} 1.0'
+      - if: failure()
+        run: docker compose logs
+      - if: always()
+        run: docker compose down -v

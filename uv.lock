@@ -716,6 +716,7 @@ dependencies = [
 dev = [
     { name = "anyio" },
     { name = "mypy" },
+    { name = "psutil" },
     { name = "pytest" },
     { name = "ruff" },
     { name = "slm-runtime" },
@@ -737,6 +738,7 @@ requires-dist = [
 dev = [
     { name = "anyio", specifier = ">=4" },
     { name = "mypy", specifier = ">=1.10" },
+    { name = "psutil", specifier = ">=5.9" },
     { name = "pytest", specifier = ">=8" },
     { name = "ruff", specifier = ">=0.6" },
     { name = "slm-runtime", git = "https://github.com/ragnarlothbrok53/slm-inference-engine?rev=v0.1.0" },

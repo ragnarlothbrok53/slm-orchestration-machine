@@ -35,6 +35,11 @@ def test_json_answer_is_stringified_and_stripped() -> None:
     assert parse_json_decision('{"answer": [1, 2]}', TOOLS) == AnswerDecision("[1, 2]")
 
 
+def test_forced_answer_without_closing_is_accepted() -> None:
+    assert parse_json_decision('{"answer": "5908', TOOLS) == AnswerDecision("5908")
+    assert parse_json_decision('{"answer": "5908"', TOOLS) == AnswerDecision("5908")
+
+
 def test_tool_without_args_defaults_to_empty() -> None:
     assert parse_json_decision('{"tool": "utc_now"}', TOOLS) == ToolDecision("utc_now", {})
 
@@ -72,6 +77,34 @@ def test_qwen_tool_call_with_template_double_braces_and_no_closing_tag() -> None
     # Qwen2.5's template shows the call example in double braces, and the model copies them.
     text = '<tool_call>\n{{"name": "calculator", "arguments": {"expression": "1+1"}}'
     assert parse_qwen_decision(text, TOOLS) == ToolDecision("calculator", {"expression": "1+1"})
+
+
+def test_qwen_tool_call_with_closed_double_braces() -> None:
+    # Seen from Qwen2.5-0.5B in the eval: "{{...}}" is a set-of-dict to literal_eval (TypeError).
+    text = '<tool_call>\n{{"name": "calculator", "arguments": {"expression": "1+1"}}}\n</tool_call>'
+    assert parse_qwen_decision(text, TOOLS) == ToolDecision("calculator", {"expression": "1+1"})
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "{{}}",
+        "{{1: 2}}",
+        "{{'a': {'b': 1}}}",
+        "{[1, 2]: 3}",
+        "{" * 1000 + "}" * 1000,  # deep nesting (model output is capped at 1024 tokens)
+        "{'a': 1e999999}",
+        "{'x': " + "(" * 200 + "1" + ")" * 200 + "}",
+        '{"tool": null}',
+        '{"answer": null}',
+        "\x00{\x00}",
+        "{'a': b'bytes'}",
+    ],
+)
+def test_parsers_never_raise_on_hostile_text(text: str) -> None:
+    for parse in (parse_json_decision, parse_qwen_decision):
+        parse(text, TOOLS)  # must return a Decision, whatever the input
+        parse(f"<tool_call>{text}</tool_call>", TOOLS)
 
 
 def test_qwen_plain_text_is_the_answer() -> None:

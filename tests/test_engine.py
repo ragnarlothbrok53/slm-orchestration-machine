@@ -339,5 +339,25 @@ def test_workflow_and_step_definitions_are_checked() -> None:
 
     with pytest.raises(TypeError, match="must be async def"):
         Workflow.define("x", untyped)
-    assert RetryPolicy(initial_s=1, backoff=2, max_s=5).delay(10, None) == 5
-    assert RetryPolicy(initial_s=1).delay(1, retry_after=3) == 3
+
+
+def test_backoff_is_capped_and_jittered_above_retry_after() -> None:
+    exact = RetryPolicy(initial_s=1, backoff=2, max_s=5, jitter=0)
+    assert [exact.delay(n, None) for n in (1, 2, 3, 10)] == [1, 2, 4, 5]
+    assert exact.delay(1, retry_after=3) == 3
+
+    jittered = RetryPolicy(initial_s=1, backoff=2, max_s=5, jitter=0.5)
+    assert jittered.delay(3, None, rand=lambda: 0.0) == 4  # full backoff
+    assert jittered.delay(3, None, rand=lambda: 1.0) == 2  # halved
+    # Retry-After is never undercut, and jitter spreads retries above it.
+    assert jittered.delay(1, retry_after=3, rand=lambda: 1.0) == 4.5
+    assert jittered.delay(1, retry_after=3, rand=lambda: 0.0) == 3
+
+
+def test_default_llm_retry_budget_matches_the_documented_downtime() -> None:
+    """config.llm_max_attempts promises 45-90s of tolerated server downtime."""
+    policy = RetryPolicy(max_attempts=8, initial_s=1.0, max_s=30.0)
+    waits = range(1, policy.max_attempts)  # no wait after the last attempt
+    shortest = sum(policy.delay(n, None, rand=lambda: 1.0) for n in waits)
+    longest = sum(policy.delay(n, None, rand=lambda: 0.0) for n in waits)
+    assert (shortest, longest) == (45.5, 91.0)

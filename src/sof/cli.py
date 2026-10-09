@@ -7,6 +7,7 @@ import json
 import uuid
 from typing import Annotated, Any
 
+import click
 import typer
 import uvicorn
 
@@ -75,7 +76,9 @@ def run(
     question: str,
     tool: Annotated[list[str] | None, typer.Option(help="Allow only these tools.")] = None,
     max_steps: int = 6,
-    protocol: Annotated[str, typer.Option(help="json | qwen")] = "json",
+    protocol: Annotated[
+        str, typer.Option(click_type=click.Choice(["json", "qwen"]), help="Prompt protocol.")
+    ] = "json",
     as_json: Annotated[bool, typer.Option("--json", help="Print the full result.")] = False,
     db: Db = None,
     llm_url: LlmUrl = None,
@@ -84,7 +87,7 @@ def run(
     settings = _settings(db=db, llm_url=llm_url)
     configure_logging("WARNING", settings.log_json)
     status, result, error = asyncio.run(
-        _run_once(settings, AgentInput(question, tool, max_steps, protocol=protocol))  # type: ignore[arg-type]
+        _run_once(settings, AgentInput(question, tool, max_steps, protocol=protocol))  # type: ignore[arg-type]  # validated by click.Choice
     )
     if as_json:
         typer.echo(json.dumps({"status": status, "result": result, "error": error}, indent=2))
@@ -111,7 +114,7 @@ async def _run_once(
 ) -> tuple[str, dict[str, Any] | None, str | None]:
     from pydantic import TypeAdapter
 
-    store = Store(settings.db_path)
+    store = Store(settings.db_path, synchronous=settings.db_synchronous)
     try:
         run_id = uuid.uuid4().hex[:16]
         await store.submit(run_id, WORKFLOW_NAME, TypeAdapter(AgentInput).dump_json(inp).decode())

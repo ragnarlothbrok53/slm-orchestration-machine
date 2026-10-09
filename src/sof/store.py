@@ -2,10 +2,11 @@
 
 Why SQLite: the workload is small transactional writes from several processes (API, workers) on
 one host. WAL mode gives concurrent readers plus one serialized writer via file locks, which is
-exactly what claim-by-lease needs, and it ships with Python. ``synchronous=FULL`` means a step
-reported as done survives power loss, not just a process crash. Multi-host deployments need a
-server database (Postgres with ``FOR UPDATE SKIP LOCKED``); everything that touches SQL is in
-this module.
+exactly what claim-by-lease needs, and it ships with Python. ``synchronous=FULL`` (the default)
+means a step reported as done survives power loss; ``NORMAL`` survives process crashes but may
+lose the last commits on power loss, in exchange for cheaper commits (see benchmarks).
+Multi-host deployments need a server database (Postgres with ``FOR UPDATE SKIP LOCKED``);
+everything that touches SQL is in this module.
 
 All calls run on one dedicated thread per ``Store``: ``sqlite3`` is blocking, and one connection
 used from one thread is the simplest correct arrangement.
@@ -114,8 +115,14 @@ def _step(row: tuple[object, ...]) -> StepRecord:
 
 
 class Store:
-    def __init__(self, path: str | Path, clock: Callable[[], float] = time.time) -> None:
+    def __init__(
+        self,
+        path: str | Path,
+        clock: Callable[[], float] = time.time,
+        synchronous: Literal["FULL", "NORMAL"] = "FULL",
+    ) -> None:
         self.path = str(path)
+        self.synchronous = synchronous
         self.clock = clock  # wall clock: leases are compared across processes
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="sof-db")
         self._conn: sqlite3.Connection | None = None
@@ -126,7 +133,7 @@ class Store:
         if self._conn is None:
             conn = sqlite3.connect(self.path, isolation_level=None, timeout=10.0)
             conn.execute("PRAGMA journal_mode=WAL")
-            conn.execute("PRAGMA synchronous=FULL")
+            conn.execute(f"PRAGMA synchronous={self.synchronous}")
             conn.execute("PRAGMA foreign_keys=ON")
             conn.executescript(_SCHEMA)
             self._conn = conn

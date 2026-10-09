@@ -76,7 +76,7 @@ async def serve_worker(settings: Settings, tools: Iterable[Tool] = BUILTIN_TOOLS
     if settings.metrics_port:
         start_http_server(settings.metrics_port, registry=metrics.registry)
         logger.info("metrics on :{port}/metrics", port=settings.metrics_port)
-    store = Store(settings.db_path)
+    store = Store(settings.db_path, synchronous=settings.db_synchronous)
     try:
         async with agent_worker(settings, store, metrics, tools) as worker:
             install_stop_handlers(worker)

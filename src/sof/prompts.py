@@ -36,17 +36,31 @@ def chatml(turns: Sequence[tuple[str, str]], prefill: str = "") -> str:
 class Protocol:
     name: ProtocolName
     prefill: str
+    # Prefill that leaves the model no choice but to answer, used when it is looping or out of
+    # steps. None: the protocol can't force an answer this way.
+    answer_prefill: str | None
     system: Callable[[Sequence[ToolSpec]], str]
     observation: Callable[[Step], str]
     parse: Callable[[str, Collection[str]], Decision]
 
-    def render(self, tools: Sequence[ToolSpec], question: str, steps: Sequence[Step]) -> str:
+    def prefill_for(self, force_answer: bool) -> str:
+        if force_answer and self.answer_prefill is not None:
+            return self.answer_prefill
+        return self.prefill
+
+    def render(
+        self,
+        tools: Sequence[ToolSpec],
+        question: str,
+        steps: Sequence[Step],
+        force_answer: bool = False,
+    ) -> str:
         """The full prompt for the next model call, ending in the (prefilled) assistant turn."""
         turns = [("system", self.system(tools)), ("user", question)]
         for step in steps:
             turns.append(("assistant", step.model_output))
             turns.append(("user", self.observation(step)))
-        return chatml(turns, self.prefill)
+        return chatml(turns, self.prefill_for(force_answer))
 
 
 # --- json ------------------------------------------------------------------------------------
@@ -88,7 +102,7 @@ def _json_system(tools: Sequence[ToolSpec]) -> str:
 
 
 def _json_observation(step: Step) -> str:
-    if step.kind == "invalid":
+    if step.kind in ("invalid", "repeat"):
         return f"Your reply was invalid: {step.observation}.\n{_JSON_FORMAT}"
     return f"Result of {step.tool}: {step.observation}"
 
@@ -135,12 +149,14 @@ def _qwen_system(tools: Sequence[ToolSpec]) -> str:
 
 
 def _qwen_observation(step: Step) -> str:
-    if step.kind == "invalid":
+    if step.kind in ("invalid", "repeat"):
         return f"<tool_response>\nerror: {step.observation}\n</tool_response>"
     return f"<tool_response>\n{step.observation}\n</tool_response>"
 
 
 PROTOCOLS: dict[str, Protocol] = {
-    "json": Protocol("json", "{", _json_system, _json_observation, parse_json_decision),
-    "qwen": Protocol("qwen", "", _qwen_system, _qwen_observation, parse_qwen_decision),
+    "json": Protocol(
+        "json", "{", '{"answer": "', _json_system, _json_observation, parse_json_decision
+    ),
+    "qwen": Protocol("qwen", "", None, _qwen_system, _qwen_observation, parse_qwen_decision),
 }

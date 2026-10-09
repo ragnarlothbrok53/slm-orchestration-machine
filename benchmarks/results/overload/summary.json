@@ -1,0 +1,106 @@
+{
+  "environment": {
+    "timestamp": "2026-10-09T16:01:10+0530",
+    "commit": "367c8c7",
+    "dirty": true,
+    "os": "Windows 11",
+    "cpu": "Intel64 Family 6 Model 170 Stepping 4, GenuineIntel",
+    "logical_cpus": 14,
+    "memory_gb": 31.5,
+    "python": "3.13.4",
+    "sqlite": "3.49.1",
+    "disk_note": ""
+  },
+  "config": {
+    "runs": 40,
+    "calls": 3,
+    "tokens": 16,
+    "replicas": 2,
+    "queue": 2,
+    "ttft": 0.05,
+    "token_latency": 0.01,
+    "concurrency": null,
+    "repeat": 2,
+    "levels": [
+      2,
+      4,
+      16
+    ]
+  },
+  "model_cost_per_call_s": 0.2,
+  "ideal_makespan_s": 12.0,
+  "rows": [
+    {
+      "llm_concurrency": 2,
+      "repeat": 0,
+      "completed": 40,
+      "runs": 40,
+      "makespan_s": 13.8,
+      "run_latency_p50_s": 11.59,
+      "run_latency_p95_s": 13.54,
+      "server_503s": 0,
+      "sof_retries": 0.0,
+      "server_ok_requests": 120.0
+    },
+    {
+      "llm_concurrency": 4,
+      "repeat": 0,
+      "completed": 40,
+      "runs": 40,
+      "makespan_s": 12.77,
+      "run_latency_p50_s": 10.79,
+      "run_latency_p95_s": 12.55,
+      "server_503s": 0,
+      "sof_retries": 0.0,
+      "server_ok_requests": 120.0
+    },
+    {
+      "llm_concurrency": 16,
+      "repeat": 0,
+      "completed": 40,
+      "runs": 40,
+      "makespan_s": 26.0,
+      "run_latency_p50_s": 8.1,
+      "run_latency_p95_s": 16.18,
+      "server_503s": 120.0,
+      "sof_retries": 120.0,
+      "server_ok_requests": 120.0
+    },
+    {
+      "llm_concurrency": 2,
+      "repeat": 1,
+      "completed": 40,
+      "runs": 40,
+      "makespan_s": 13.82,
+      "run_latency_p50_s": 11.65,
+      "run_latency_p95_s": 13.55,
+      "server_503s": 0,
+      "sof_retries": 0.0,
+      "server_ok_requests": 120.0
+    },
+    {
+      "llm_concurrency": 4,
+      "repeat": 1,
+      "completed": 40,
+      "runs": 40,
+      "makespan_s": 12.98,
+      "run_latency_p50_s": 10.98,
+      "run_latency_p95_s": 12.75,
+      "server_503s": 0,
+      "sof_retries": 0.0,
+      "server_ok_requests": 120.0
+    },
+    {
+      "llm_concurrency": 16,
+      "repeat": 1,
+      "completed": 40,
+      "runs": 40,
+      "makespan_s": 29.46,
+      "run_latency_p50_s": 8.2,
+      "run_latency_p95_s": 26.93,
+      "server_503s": 123.0,
+      "sof_retries": 123.0,
+      "server_ok_requests": 120.0
+    }
+  ]
+}

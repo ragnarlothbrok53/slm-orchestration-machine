@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import ast
 import json
+import re
 from collections.abc import Collection
 from dataclasses import dataclass
 from typing import Any
@@ -33,6 +34,8 @@ class InvalidOutput:
 
 
 Decision = ToolDecision | AnswerDecision | InvalidOutput
+
+_UNTERMINATED_ANSWER = re.compile(r'\s*\{\s*"answer"\s*:\s*"([^"]+)"?\s*$')
 
 
 def extract_object(text: str) -> dict[str, Any] | None:
@@ -64,7 +67,9 @@ def _literal_dict_at(text: str, start: int) -> object:
             if depth == 0:
                 try:
                     return ast.literal_eval(text[start : end + 1])
-                except (ValueError, SyntaxError, MemoryError, RecursionError):
+                # Any failure means "not a dict literal here". literal_eval raises more than its
+                # docs suggest: "{{...}}" is a set containing a dict -> TypeError (unhashable).
+                except Exception:
                     return None
     return None
 
@@ -73,6 +78,8 @@ def parse_json_decision(text: str, tool_names: Collection[str]) -> Decision:
     """The ``json`` protocol: ``{"tool": name, "args": {...}}`` or ``{"answer": "..."}``."""
     obj = extract_object(text)
     if obj is None:
+        if m := _UNTERMINATED_ANSWER.match(text):  # forced answer, cut off before its closing
+            return AnswerDecision(m.group(1).strip())
         return InvalidOutput("no JSON object found")
 
     has_tool, has_answer = "tool" in obj, "answer" in obj

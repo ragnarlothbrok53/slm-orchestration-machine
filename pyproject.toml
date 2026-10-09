@@ -25,6 +25,7 @@ dev = [
     "anyio>=4",
     "ruff>=0.6",
     "mypy>=1.10",
+    "psutil>=5.9",  # benchmarks: environment capture
     # Contract/integration tests run SOF against the real inference server.
     "slm-runtime @ git+https://github.com/ragnarlothbrok53/slm-inference-engine@v0.1.0",
 ]

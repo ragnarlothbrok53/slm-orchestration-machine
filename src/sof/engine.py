@@ -24,6 +24,7 @@ import asyncio
 import contextlib
 import json
 import os
+import random
 import socket
 import time
 import uuid
@@ -83,10 +84,23 @@ class RetryPolicy:
     backoff: float = 2.0
     max_s: float = 30.0
     timeout_s: float | None = None  # per attempt
+    jitter: float = 0.5  # fraction of each delay that is randomized; 0 = deterministic
 
-    def delay(self, failed_attempt: int, retry_after: float | None) -> float:
+    def delay(
+        self,
+        failed_attempt: int,
+        retry_after: float | None,
+        rand: Callable[[], float] = random.random,
+    ) -> float:
+        """Exponential backoff, randomized so that clients rejected together don't all retry
+        together (measured: without jitter, an overloaded server sat idle between synchronized
+        retry waves; see benchmarks/bench_overload.py). ``Retry-After`` is a floor, so jitter is
+        only ever added on top of it."""
         backoff = min(self.initial_s * self.backoff ** (failed_attempt - 1), self.max_s)
-        return max(backoff, retry_after or 0.0)
+        backoff *= 1 - self.jitter * rand()
+        if retry_after:
+            return max(backoff, retry_after * (1 + self.jitter * rand()))
+        return backoff
 
 
 @dataclass(frozen=True)

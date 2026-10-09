@@ -137,3 +137,16 @@ async def test_probes_and_metrics(tmp_path: Path) -> None:
         assert 'sof_runs{status="completed"} 1.0' in text
         assert 'sof_runs_finished_total{outcome="completed"} 1.0' in text  # embedded worker
         assert 'sof_agent_runs_total{status="answered"} 1.0' in text
+
+
+async def test_serve_mode_is_unready_if_the_embedded_worker_dies(tmp_path: Path) -> None:
+    async def broken_worker(store: Store, metrics: Metrics) -> None:
+        raise RuntimeError("worker bug")
+
+    app = create_app(Settings(db_path=str(tmp_path / "x.db")), run_worker=broken_worker)
+    async with app.router.lifespan_context(app):
+        await asyncio.sleep(0.01)
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            r = await client.get("/readyz")
+    assert r.status_code == 503 and r.json()["error"] == "worker stopped"

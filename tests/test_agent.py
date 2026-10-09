@@ -67,15 +67,26 @@ async def test_repairs_are_bounded(store: Store) -> None:
     assert result.status == "max_repairs" and result.answer is None and len(llm.prompts) == 3
 
 
-async def test_repeated_tool_call_is_not_executed_again(store: Store) -> None:
-    llm = ScriptedLlm([CALC, CALC, ANSWER])
+async def test_repeated_tool_call_is_not_executed_and_forces_an_answer(store: Store) -> None:
+    llm = ScriptedLlm([CALC, CALC, '395"}'])
     await submit(store)
     metrics = Metrics()
     await run_to_completion(make_worker(store, llm, metrics=metrics), store, "r1")
     result = await result_of(store)
-    assert [s.kind for s in result.steps] == ["tool", "invalid", "answer"]
+    assert [s.kind for s in result.steps] == ["tool", "repeat", "answer"]
     assert "you already called calculator" in (result.steps[1].observation or "")
+    assert llm.prompts[2].endswith('<|im_start|>assistant\n{"answer": "')
+    assert (result.status, result.answer) == ("answered", "395")
     assert sample_value(metrics, "sof_tool_calls_total", {"tool": "calculator", "ok": "true"}) == 1
+
+
+async def test_last_step_must_answer(store: Store) -> None:
+    llm = ScriptedLlm([CALC, "395"])  # forced answer, cut off before its closing quote
+    await submit(store, max_steps=2)
+    await run_to_completion(make_worker(store, llm), store, "r1")
+    result = await result_of(store)
+    assert llm.prompts[1].endswith('{"answer": "')
+    assert (result.status, result.answer) == ("answered", "395")
 
 
 async def test_step_budget(store: Store) -> None:

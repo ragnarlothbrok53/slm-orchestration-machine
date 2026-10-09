@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -11,6 +13,11 @@ class Settings(BaseSettings):
 
     # --- durable state ---
     db_path: str = Field("sof.db", description="SQLite journal, shared by the API and workers.")
+    db_synchronous: Literal["FULL", "NORMAL"] = Field(
+        "FULL",
+        description="FULL: finished steps survive power loss. NORMAL: they survive process "
+        "crashes only, but commits are cheaper.",
+    )
 
     # --- worker ---
     max_concurrent_runs: int = Field(8, ge=1, description="Runs one worker executes at once.")
@@ -37,7 +44,11 @@ class Settings(BaseSettings):
         "so the server's own 504 arrives first.",
     )
     llm_max_attempts: int = Field(
-        6, ge=1, description="Attempts per LLM call, including the first."
+        8,
+        ge=1,
+        description="Attempts per LLM call, including the first. With the default backoff "
+        "(1s doubling to 30s, jittered) the 7 waits add up to 45-90s of server downtime, "
+        "e.g. a model reload.",
     )
     llm_concurrency: int = Field(
         1,

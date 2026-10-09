@@ -174,7 +174,7 @@ def create_app(
     settings = settings or Settings()
     metrics = metrics or Metrics()
     owns_store = store is None
-    db = store or Store(settings.db_path)
+    db = store or Store(settings.db_path, synchronous=settings.db_synchronous)
     runs_by_status = Gauge(
         "sof_runs",
         "Runs in the journal by status (sampled at scrape)",
@@ -182,9 +182,20 @@ def create_app(
         registry=metrics.registry,
     )
 
+    worker_task: asyncio.Task[None] | None = None
+
+    def worker_died(task: asyncio.Task[None]) -> None:
+        if not task.cancelled() and task.exception() is not None:
+            logger.opt(exception=task.exception()).error(
+                "embedded worker died; runs will not execute"
+            )
+
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        worker_task = asyncio.create_task(run_worker(db, metrics)) if run_worker else None
+        nonlocal worker_task
+        if run_worker is not None:
+            worker_task = asyncio.create_task(run_worker(db, metrics))
+            worker_task.add_done_callback(worker_died)
         try:
             yield
         finally:
@@ -222,8 +233,11 @@ def create_app(
 
     @app.get("/readyz")
     async def readyz() -> JSONResponse:
-        """Ready when the journal answers. Model readiness is the workers' concern: they wait
-        for it before claiming, so runs queue up as ``pending`` meanwhile."""
+        """Ready when the journal answers (and, with ``sof serve``, the embedded worker is
+        alive). Model readiness is the workers' concern: they wait for it before claiming, so
+        runs queue up as ``pending`` meanwhile."""
+        if worker_task is not None and worker_task.done():
+            return JSONResponse({"status": "unavailable", "error": "worker stopped"}, 503)
         try:
             async with asyncio.timeout(2.0):
                 counts = await db.count_by_status()
@@ -246,9 +260,8 @@ def create_app(
         timeout_s: float = Query(30.0, gt=0, description="Max wait (capped by the server)."),
     ) -> RunView:
         run_id = req.run_id or uuid.uuid4().hex[:16]
-        payload = _INPUT.dump_json(
-            req.agent_input()
-        ).decode()  # canonical: same request, same bytes
+        # Canonical encoding: the same request always gives the same bytes (idempotency check).
+        payload = _INPUT.dump_json(req.agent_input()).decode()
         try:
             run, created = await db.submit(run_id, WORKFLOW_NAME, payload)
         except RunConflictError as exc:

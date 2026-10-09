@@ -14,6 +14,7 @@ from .contracts import (
     LlmResponse,
     RunStatus,
     Step,
+    StepKind,
     ToolCall,
     ToolResult,
     ToolSpec,
@@ -56,7 +57,7 @@ class AgentSteps:
 def agent_workflow(
     steps: AgentSteps,
     *,
-    llm_retry: RetryPolicy = RetryPolicy(max_attempts=6, initial_s=1.0, max_s=30.0),  # noqa: B008
+    llm_retry: RetryPolicy = RetryPolicy(max_attempts=8, initial_s=1.0, max_s=30.0),  # noqa: B008
     tool_retry: RetryPolicy = RetryPolicy(max_attempts=3, timeout_s=30.0),  # noqa: B008
 ) -> Workflow[AgentInput, AgentResult]:
     metrics = steps.metrics
@@ -76,9 +77,14 @@ def agent_workflow(
                 metrics.agent_outcomes.labels(status).inc()
             return AgentResult(status, answer, history, usage)
 
-        for _ in range(inp.max_steps):
+        for i in range(inp.max_steps):
+            # A model that repeats a call has nothing new to do with tools; one on its last
+            # step has no room left for them. Either way, make the next reply an answer.
+            force_answer = (bool(history) and history[-1].kind == "repeat") or (
+                i > 0 and i == inp.max_steps - 1
+            )
             request = LlmRequest(
-                prompt=protocol.render(specs, inp.question, history),
+                prompt=protocol.render(specs, inp.question, history, force_answer),
                 max_tokens=inp.max_tokens,
                 temperature=inp.temperature,
                 stop=STOP,
@@ -89,11 +95,13 @@ def agent_workflow(
             usage.completion_tokens += resp.completion_tokens
             usage.llm_seconds += resp.latency_s
 
-            output = protocol.prefill + resp.text
+            output = protocol.prefill_for(force_answer) + resp.text
             decision = protocol.parse(output, names)
+            kind: StepKind = "invalid"
             if isinstance(decision, ToolDecision) and (seen := _earlier_result(history, decision)):
                 # Small models often re-issue a call they already made instead of answering.
                 # Running it again can't help, and it would loop until max_steps.
+                kind = "repeat"
                 decision = InvalidOutput(
                     f"you already called {decision.tool} with these arguments and got: {seen}. "
                     "Use that result: answer, or make a different call"
@@ -108,7 +116,7 @@ def agent_workflow(
                     metrics.agent_invalid_outputs.inc()
                 history.append(
                     Step(
-                        "invalid",
+                        kind,
                         output,
                         observation=decision.reason,
                         llm_request_id=resp.request_id,

@@ -69,7 +69,7 @@ class AgentInput:
     protocol: Literal["json", "qwen"] = "json"  # see sof.prompts
 
 
-StepKind = Literal["tool", "answer", "invalid"]
+StepKind = Literal["tool", "answer", "invalid", "repeat"]  # repeat: re-issued an earlier call
 
 
 @dataclass
