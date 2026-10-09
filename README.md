@@ -203,18 +203,23 @@ uv sync
 uv run sof run "A shop sells pens at 17 rupees each. Priya buys 23 pens and pays a 4 rupee delivery fee. How much does she pay?" --protocol qwen
 ```
 
-Real output from that command (Qwen2.5-0.5B, CPU). This one is correct; the model doesn't always
-pick the right operator (see Performance):
+Real output of that command (Qwen2.5-0.5B on a laptop CPU):
 
 ```
 model> <tool_call>
-{{"name": "calculator", "arguments": {"expression": "17 * 23 + 4"}}
+{{"name": "calculator", "arguments": {"expression": "23 * 17 - 4"}}
 </tool_call>
-tool> 395
-model> Priya pays a total of 395 rupees.
+tool> 387
+model> Priya pays 387 rupees for the pens.
 
-answered: Priya pays a total of 395 rupees.
+answered: Priya pays 387 rupees for the pens.
+[2 LLM calls, 1 tool calls, 706+40 tokens, 1.8s in the model]
 ```
+
+The orchestration did its job: one well-formed tool call, the result, a clean answer, in 2 calls.
+The *answer is wrong*: the model subtracted the delivery fee. In the evaluation it wrote
+`price * qty - fee` on all 7 problems of this template, with both protocols. No amount of
+orchestration fixes a wrong formula that is then computed faithfully. See [Performance](#performance--evaluation).
 
 **Docker** (the whole stack; slm-runtime is built from its GitHub tag):
 

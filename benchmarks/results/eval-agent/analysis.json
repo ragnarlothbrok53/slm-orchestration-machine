@@ -1,0 +1,61 @@
+{
+  "paired": {
+    "cot vs agent-json": {
+      "only_first_correct": 4,
+      "only_second_correct": 8,
+      "p_exact": 0.3877
+    },
+    "cot vs agent-qwen": {
+      "only_first_correct": 3,
+      "only_second_correct": 15,
+      "p_exact": 0.0075
+    },
+    "agent-json vs agent-qwen": {
+      "only_first_correct": 0,
+      "only_second_correct": 8,
+      "p_exact": 0.0078
+    }
+  },
+  "per_template": {
+    "price x qty + fee": {
+      "cot": 2,
+      "agent-json": 0,
+      "agent-qwen": 0
+    },
+    "give away, buy bags": {
+      "cot": 1,
+      "agent-json": 0,
+      "agent-qwen": 7
+    },
+    "two-leg distance": {
+      "cot": 3,
+      "agent-json": 6,
+      "agent-qwen": 7
+    },
+    "boxes - sold": {
+      "cot": 1,
+      "agent-json": 0,
+      "agent-qwen": 0
+    },
+    "percent discount": {
+      "cot": 7,
+      "agent-json": 7,
+      "agent-qwen": 7
+    },
+    "weekly savings - gift": {
+      "cot": 2,
+      "agent-json": 7,
+      "agent-qwen": 7
+    }
+  },
+  "agent-json_errors": {
+    "wrong": 22,
+    "a_tool_call_computed_the_right_value": 0,
+    "answer_equals_its_own_expression": 16
+  },
+  "agent-qwen_errors": {
+    "wrong": 14,
+    "a_tool_call_computed_the_right_value": 0,
+    "answer_equals_its_own_expression": 7
+  }
+}
