@@ -394,11 +394,13 @@ class Worker:
         ctx = RunContext(self.store, run, journal, self.metrics)
         me = asyncio.current_task()
         assert me is not None
-        heartbeat = asyncio.create_task(self._heartbeat(run, me))
+        finishing = asyncio.Event()  # once set, a late cancel must not interrupt the final write
+        heartbeat = asyncio.create_task(self._heartbeat(run, me, finishing))
         self.metrics.runs_active.inc()
         try:
             output = await wf.fn(ctx, _adapter(wf.input_type).validate_json(run.input))
             payload = _adapter(wf.output_type).dump_json(output).decode()
+            finishing.set()
             await self._finish(run, "completed", output=payload)
             self.metrics.run_duration.observe(self.store.clock() - run.created_at)
         except asyncio.CancelledError:
@@ -435,10 +437,12 @@ class Worker:
         self.metrics.leases_lost.inc()
         logger.warning("lease lost; another worker owns this run now")
 
-    async def _heartbeat(self, run: Run, task: asyncio.Task[Any]) -> None:
+    async def _heartbeat(self, run: Run, task: asyncio.Task[Any], finishing: asyncio.Event) -> None:
         interval = self.lease_s / 3
         while True:
             await asyncio.sleep(interval)
+            if finishing.is_set():
+                return  # the result is being written; the fenced write decides the outcome
             try:
                 cancel = await self.store.heartbeat(run.id, run.lease_token, self.lease_s)
             except LeaseLostError:

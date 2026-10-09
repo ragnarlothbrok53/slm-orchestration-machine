@@ -63,12 +63,16 @@ def summarize(values: Sequence[float], scale: float = 1.0) -> dict[str, float]:
     }
 
 
+# Captured when the benchmark starts: the code that ran, not whatever HEAD is when it ends.
+STARTED_IN = environment()
+
+
 def write_results(name: str, payload: dict[str, Any], rows: list[dict[str, Any]]) -> Path:
     """``results/<name>/summary.json`` (environment + config + summary) and ``rows.csv``."""
     out = RESULTS / name
     out.mkdir(parents=True, exist_ok=True)
     (out / "summary.json").write_text(
-        json.dumps({"environment": environment(), **payload}, indent=2) + "\n", encoding="utf-8"
+        json.dumps({"environment": STARTED_IN, **payload}, indent=2) + "\n", encoding="utf-8"
     )
     if rows:
         with (out / "rows.csv").open("w", newline="", encoding="utf-8") as f:
