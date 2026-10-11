@@ -1,10 +1,57 @@
-version: "3.9"
+# The full stack: slm-runtime (model server) + SOF API + SOF workers, sharing one journal volume.
+#
+#   mkdir -p models && curl -L -o models/qwen2.5-0.5b-instruct-q4_k_m.gguf \
+#     https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf
+#   docker compose up --build                       # real model
+#   SLM_ENGINE=fake docker compose up --build       # no model: wiring check only
+#   docker compose up --scale worker=3              # more workers, same journal
+#
+# The journal is SQLite on a named volume: every container that mounts it must run on the same
+# host (Docker Desktop: the same VM). Don't put it on a network filesystem; see docs.
+
+x-sof: &sof
+  build: .
+  image: sof:local
+  env_file:
+    - path: .env
+      required: false
+  volumes:
+    - sof-data:/data
+
 services:
-  app:
-    build: .
-    ports:
-      - "80:80"
-    env_file:
-      - .env
+  slm-runtime:
+    # The inference server from https://github.com/ragnarlothbrok53/slm-inference-engine
+    build: https://github.com/ragnarlothbrok53/slm-inference-engine.git#v0.1.0
+    environment:
+      SLM_ENGINE: ${SLM_ENGINE:-llama_cpp}
+      SLM_MODEL_PATH: /models/${MODEL_FILE:-qwen2.5-0.5b-instruct-q4_k_m.gguf}
+      SLM_REPLICAS: ${SLM_REPLICAS:-1}
     volumes:
-      - .:/app:rw
+      - ./models:/models:ro
+    ports:
+      - "8000:8000"
+
+  api:
+    <<: *sof
+    command: ["sof", "api"]
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/readyz', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  worker:
+    <<: *sof
+    command: ["sof", "worker"]
+    environment:
+      SOF_LLM_BASE_URL: http://slm-runtime:8000
+      # One LLM call in flight per worker; the default slm-runtime has one replica.
+      SOF_LLM_CONCURRENCY: ${SLM_REPLICAS:-1}
+    depends_on:
+      - slm-runtime  # workers wait for its /readyz themselves before claiming runs
+    stop_grace_period: 15s  # > SOF_SHUTDOWN_GRACE_S, so runs are handed back, not killed
+
+volumes:
+  sof-data:

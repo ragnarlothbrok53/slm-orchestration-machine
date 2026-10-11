@@ -1,0 +1,107 @@
+{
+  "environment": {
+    "timestamp": "2026-10-09T15:57:22+0530",
+    "commit": "367c8c7",
+    "dirty": true,
+    "os": "Windows 11",
+    "cpu": "Intel64 Family 6 Model 170 Stepping 4, GenuineIntel",
+    "logical_cpus": 14,
+    "memory_gb": 31.5,
+    "python": "3.13.4",
+    "sqlite": "3.49.1",
+    "disk_note": ""
+  },
+  "config": {
+    "runs": 40,
+    "calls": 3,
+    "tokens": 16,
+    "replicas": 2,
+    "queue": 2,
+    "ttft": 0.05,
+    "token_latency": 0.01,
+    "concurrency": null,
+    "repeat": 2,
+    "levels": [
+      2,
+      4,
+      16
+    ]
+  },
+  "model_cost_per_call_s": 0.2,
+  "ideal_makespan_s": 12.0,
+  "rows": [
+    {
+      "llm_concurrency": 2,
+      "repeat": 0,
+      "completed": 40,
+      "runs": 40,
+      "makespan_s": 13.55,
+      "run_latency_p50_s": 11.46,
+      "run_latency_p95_s": 13.3,
+      "server_503s": 0,
+      "sof_retries": 0.0,
+      "server_ok_requests": 120.0
+    },
+    {
+      "llm_concurrency": 4,
+      "repeat": 0,
+      "completed": 40,
+      "runs": 40,
+      "makespan_s": 12.63,
+      "run_latency_p50_s": 10.65,
+      "run_latency_p95_s": 12.39,
+      "server_503s": 0,
+      "sof_retries": 0.0,
+      "server_ok_requests": 120.0
+    },
+    {
+      "llm_concurrency": 16,
+      "repeat": 0,
+      "completed": 40,
+      "runs": 40,
+      "makespan_s": 122.72,
+      "run_latency_p50_s": 16.45,
+      "run_latency_p95_s": 122.5,
+      "server_503s": 162.0,
+      "sof_retries": 162.0,
+      "server_ok_requests": 120.0
+    },
+    {
+      "llm_concurrency": 2,
+      "repeat": 1,
+      "completed": 40,
+      "runs": 40,
+      "makespan_s": 13.44,
+      "run_latency_p50_s": 11.4,
+      "run_latency_p95_s": 13.2,
+      "server_503s": 0,
+      "sof_retries": 0.0,
+      "server_ok_requests": 120.0
+    },
+    {
+      "llm_concurrency": 4,
+      "repeat": 1,
+      "completed": 40,
+      "runs": 40,
+      "makespan_s": 12.77,
+      "run_latency_p50_s": 10.79,
+      "run_latency_p95_s": 12.54,
+      "server_503s": 0,
+      "sof_retries": 0.0,
+      "server_ok_requests": 120.0
+    },
+    {
+      "llm_concurrency": 16,
+      "repeat": 1,
+      "completed": 40,
+      "runs": 40,
+      "makespan_s": 182.09,
+      "run_latency_p50_s": 32.32,
+      "run_latency_p95_s": 152.65,
+      "server_503s": 192.0,
+      "sof_retries": 192.0,
+      "server_ok_requests": 120.0
+    }
+  ],
+  "note": "Before jitter was added to RetryPolicy (commit 367c8c7 + uncommitted bench code). Kept to show the retry-storm effect; see results/overload for the current behaviour."
+}

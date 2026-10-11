@@ -1,0 +1,54 @@
+{
+  "environment": {
+    "timestamp": "2026-10-09T16:39:54+0530",
+    "commit": "6ddad67",
+    "dirty": false,
+    "os": "Windows 11",
+    "cpu": "Intel64 Family 6 Model 170 Stepping 4, GenuineIntel",
+    "logical_cpus": 14,
+    "memory_gb": 31.5,
+    "python": "3.13.4",
+    "sqlite": "3.49.1",
+    "disk_note": ""
+  },
+  "config": {
+    "trials": 10,
+    "lease": [
+      2.0,
+      5.0
+    ],
+    "steps": 10,
+    "step_s": 0.3
+  },
+  "lease_2.0": {
+    "completed": "10/10",
+    "recovery_s": {
+      "n": 10,
+      "mean": 2.006,
+      "p50": 1.955,
+      "p95": 2.302,
+      "p99": 2.336,
+      "max": 2.344
+    },
+    "re_executed_steps": {
+      "0": 10
+    },
+    "lost_steps": 0
+  },
+  "lease_5.0": {
+    "completed": "10/10",
+    "recovery_s": {
+      "n": 10,
+      "mean": 4.433,
+      "p50": 4.672,
+      "p95": 4.921,
+      "p99": 4.99,
+      "max": 5.007
+    },
+    "re_executed_steps": {
+      "0": 9,
+      "1": 1
+    },
+    "lost_steps": 0
+  }
+}

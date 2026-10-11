@@ -1,46 +1,33 @@
-FROM python:3.13-bookworm
+# syntax=docker/dockerfile:1
+# One image for every role: `sof serve` (default), `sof api`, `sof worker`.
+# The SQLite journal lives in /data; share that volume between the API and the workers.
+#
+#   docker build -t sof .
+#   docker run --rm -p 8080:8080 -v sof-data:/data -e SOF_LLM_BASE_URL=http://host:8000 sof
 
-ENV DEBIAN_FRONTEND=noninteractive
+FROM python:3.13-slim AS builder
+COPY --from=ghcr.io/astral-sh/uv:0.8 /uv /bin/uv
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never
+WORKDIR /app
+# Dependencies first, so source edits don't invalidate the dependency layer.
+COPY pyproject.toml uv.lock README.md ./
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev --no-install-project
+COPY src ./src
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev --no-editable
 
-ENV PATH="/usr/local/bin:${PATH}" \
-    PYTHONUNBUFFERED=1
-
-WORKDIR /
-
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        curl \
-        nginx \
-        supervisor \
-        ca-certificates \
-        tar \
-    && rm -rf /var/lib/apt/lists/*
-
-
-# For ARM64 (Apple M1/M2/M3, AWS Graviton)
-RUN curl -L "https://temporal.download/cli/archive/latest?platform=linux&arch=arm64" \
-    -o /tmp/temporal.tar.gz \
-    && tar -xzf /tmp/temporal.tar.gz -C /usr/local/bin temporal \
-    && rm /tmp/temporal.tar.gz \
-    && temporal --version
-
-# RUN curl -L "https://temporal.download/cli/archive/latest?platform=linux&arch=amd64" \
-#     -o /tmp/temporal.tar.gz \
-#     && tar -xzf /tmp/temporal.tar.gz -C /usr/local/bin/ temporal \
-#     && rm /tmp/temporal.tar.gz \
-#     && temporal --version
-
-COPY pyproject.toml  .
-RUN python -m pip install --no-cache-dir uv \
-    && uv sync
-
-COPY . .
-RUN mkdir -p /var/log/supervisor /var/log/nginx
-RUN rm -f /etc/nginx/sites-enabled/default || true
-
-COPY config/nginx.conf /etc/nginx/nginx.conf
-COPY config/supervisord.conf /etc/supervisor/supervisord.conf
-
-EXPOSE 80
-
-CMD ["supervisord", "-n", "-c", "/etc/supervisor/supervisord.conf"]
+FROM python:3.13-slim
+RUN useradd --create-home --uid 10001 app && mkdir /data && chown app /data
+COPY --from=builder /app/.venv /app/.venv
+ENV PATH=/app/.venv/bin:$PATH \
+    PYTHONUNBUFFERED=1 \
+    SOF_DB_PATH=/data/sof.db \
+    SOF_API_HOST=0.0.0.0 \
+    SOF_LOG_JSON=true
+USER app
+WORKDIR /home/app
+VOLUME /data
+# 8080: API (also serves /metrics). 9464: Prometheus endpoint of `sof worker`.
+EXPOSE 8080 9464
+CMD ["sof", "serve"]
