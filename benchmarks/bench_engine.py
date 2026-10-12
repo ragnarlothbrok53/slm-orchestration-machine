@@ -18,10 +18,10 @@ from typing import Literal
 from common import summarize, write_results
 from workloads import STEPS, TIMINGS, StepsInput
 
-from sof.engine import Worker
-from sof.logs import configure_logging
-from sof.metrics import Metrics
-from sof.store import TERMINAL, StepRecord, Store
+from slom.engine import Worker
+from slom.logs import configure_logging
+from slom.metrics import Metrics
+from slom.store import TERMINAL, StepRecord, Store
 
 Sync = Literal["FULL", "NORMAL"]
 

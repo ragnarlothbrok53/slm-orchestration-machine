@@ -1,4 +1,4 @@
-"""Assemble a worker from settings, and run one as a process (``sof worker``)."""
+"""Assemble a worker from settings, and run one as a process (``slom worker``)."""
 
 from __future__ import annotations
 

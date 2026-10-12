@@ -698,7 +698,23 @@ wheels = [
 ]
 
 [[package]]
-name = "slm-orchestration-framework"
+name = "slim-serve"
+version = "0.1.0"
+source = { git = "https://github.com/ragnarlothbrok53/slm-inference-machine?rev=v0.2.0#158b8ffd9bf1164477366f88217cbcc92e92b3aa" }
+dependencies = [
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "loguru" },
+    { name = "prometheus-client" },
+    { name = "psutil" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "typer" },
+    { name = "uvicorn" },
+]
+
+[[package]]
+name = "slom"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
@@ -719,7 +735,7 @@ dev = [
     { name = "psutil" },
     { name = "pytest" },
     { name = "ruff" },
-    { name = "slm-runtime" },
+    { name = "slim-serve" },
 ]
 
 [package.metadata]
@@ -741,23 +757,7 @@ dev = [
     { name = "psutil", specifier = ">=5.9" },
     { name = "pytest", specifier = ">=8" },
     { name = "ruff", specifier = ">=0.6" },
-    { name = "slm-runtime", git = "https://github.com/ragnarlothbrok53/slm-inference-engine?rev=v0.1.0" },
-]
-
-[[package]]
-name = "slm-runtime"
-version = "0.1.0"
-source = { git = "https://github.com/ragnarlothbrok53/slm-inference-engine?rev=v0.1.0#cb7237ebffcc3b5fdcf7e2b7585b96249e5f8cef" }
-dependencies = [
-    { name = "fastapi" },
-    { name = "httpx" },
-    { name = "loguru" },
-    { name = "prometheus-client" },
-    { name = "psutil" },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-    { name = "typer" },
-    { name = "uvicorn" },
+    { name = "slim-serve", git = "https://github.com/ragnarlothbrok53/slm-inference-machine?rev=v0.2.0" },
 ]
 
 [[package]]

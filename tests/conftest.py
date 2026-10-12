@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from sof.store import Store
+from slom.store import Store
 
 
 @pytest.fixture
@@ -31,6 +31,6 @@ def clock() -> FakeClock:
 
 @pytest.fixture
 async def store(tmp_path: Path, clock: FakeClock) -> AsyncIterator[Store]:
-    s = Store(tmp_path / "sof.db", clock=clock)
+    s = Store(tmp_path / "slom.db", clock=clock)
     yield s
     await s.close()

@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from conftest import FakeClock
 
-from sof.store import LeaseLostError, RunConflictError, StepRecord, Store
+from slom.store import LeaseLostError, RunConflictError, StepRecord, Store
 
 pytestmark = pytest.mark.anyio
 

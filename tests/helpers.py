@@ -6,13 +6,13 @@ import asyncio
 import time
 from collections.abc import Callable, Sequence
 
-from sof.agent import AgentSteps, agent_workflow
-from sof.contracts import LlmRequest, LlmResponse
-from sof.engine import RetryPolicy, Worker, step_info
-from sof.llm import LlmClient
-from sof.metrics import Metrics
-from sof.store import TERMINAL, Run, Store
-from sof.tools import BUILTIN_TOOLS, ToolRegistry
+from slom.agent import AgentSteps, agent_workflow
+from slom.contracts import LlmRequest, LlmResponse
+from slom.engine import RetryPolicy, Worker, step_info
+from slom.llm import LlmClient
+from slom.metrics import Metrics
+from slom.store import TERMINAL, Run, Store
+from slom.tools import BUILTIN_TOOLS, ToolRegistry
 
 FAST_RETRY = RetryPolicy(max_attempts=3, initial_s=0.01, max_s=0.05)
 

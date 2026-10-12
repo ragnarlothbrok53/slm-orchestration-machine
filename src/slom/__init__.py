@@ -1,4 +1,4 @@
-"""SOF: durable, tool-using agents for small language models."""
+"""SLOM: durable, tool-using agents for small language models."""
 
 from .contracts import AgentInput, AgentResult
 from .engine import (

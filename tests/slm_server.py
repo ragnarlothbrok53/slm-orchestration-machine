@@ -1,4 +1,4 @@
-"""slm-runtime (the real server, v0.1.0) running in-process with a scripted engine."""
+"""slim-serve (the real server, v0.1.0) running in-process with a scripted engine."""
 
 from __future__ import annotations
 
@@ -11,9 +11,9 @@ from contextlib import contextmanager
 
 import httpx
 import uvicorn
-from slm_runtime.app import create_app as create_slm_app
-from slm_runtime.config import Settings as SlmSettings
-from slm_runtime.engines import Chunk, Engine, GenerationParams
+from slim_serve.app import create_app as create_slm_app
+from slim_serve.config import Settings as SlmSettings
+from slim_serve.engines import Chunk, Engine, GenerationParams
 
 CALL = '"tool": "calculator", "args": {"expression": "17*23+4"}}'
 ANSWER = '"answer": "395"}'
@@ -63,7 +63,7 @@ def _free_port() -> int:
 
 
 @contextmanager
-def slm_runtime(engine: Engine, **settings: object) -> Iterator[str]:
+def slim_serve(engine: Engine, **settings: object) -> Iterator[str]:
     port = _free_port()
     app = create_slm_app(SlmSettings(engine="fake", **settings), engines=[engine])  # type: ignore[arg-type]
     server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, log_config=None))

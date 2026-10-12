@@ -25,7 +25,7 @@ multi-step task:
   model calls again.
 
 The usual answer to the last point is a workflow engine like Temporal, which is a cluster to run
-before your first agent works. SOF implements the part an agent loop needs (journaled steps,
+before your first agent works. SLOM implements the part an agent loop needs (journaled steps,
 leases, fenced recovery, classified retries) in about 800 lines, and backs each guarantee with a
 test that breaks it on purpose and a measurement.
 
@@ -35,7 +35,7 @@ test that breaks it on purpose and a measurement.
   finished steps return their recorded result (~0.03 ms) instead of running again. Leases with
   fencing tokens let a crashed or stalled worker's runs move to another worker, safely. Tested by
   killing a real worker process mid-call.
-- **Failure-aware LLM client** for slm-runtime and other OpenAI-compatible `/v1/completions`
+- **Failure-aware LLM client** for slim-serve and other OpenAI-compatible `/v1/completions`
   servers. It maps `503`/`429`/`504`/`5xx`/`4xx`, in-band stream errors and truncated streams to
   retry decisions, with jittered backoff that never undercuts `Retry-After`. A client-side
   concurrency cap matches server capacity. It always streams, so cancelling a run stops
@@ -48,12 +48,12 @@ test that breaks it on purpose and a measurement.
   `idempotency_key()` for tools with side effects.
 - **HTTP API and CLI:**
   - submit (idempotent `run_id`, optional `?wait=true`), inspect with live step progress, cancel;
-  - `sof serve` runs the API and a worker in one process, `sof worker` scales out on one host;
-  - `sof run "question"` runs a single task in the current process.
+  - `slom serve` runs the API and a worker in one process, `slom worker` scales out on one host;
+  - `slom run "question"` runs a single task in the current process.
 - **Observability.** Prometheus metrics that separate live work from replayed steps, structured
-  logs, and `X-Request-ID = run.step.attempt` propagated into slm-runtime's logs.
+  logs, and `X-Request-ID = run.step.attempt` propagated into slim-serve's logs.
 - **Evidence.**
-  - 124 tests: unit, engine semantics, API, contract tests against the real slm-runtime v0.1.0,
+  - 124 tests: unit, engine semantics, API, contract tests against the real slim-serve v0.1.0,
     and a process-kill recovery test. They were checked by mutation (9 deliberately broken
     guarantees, all caught).
   - Benchmarks with committed raw results.
@@ -80,7 +80,7 @@ flowchart LR
         wf --> tools
     end
 
-    llmc -->|"SSE /v1/completions<br/>X-Request-ID"| slm["slm-runtime<br/>llama.cpp · MLX"]
+    llmc -->|"SSE /v1/completions<br/>X-Request-ID"| slm["slim-serve<br/>llama.cpp · MLX"]
     slm -.->|"503 Retry-After · 504 · 400"| llmc
     prom([Prometheus]) -.->|"/metrics"| api
     prom -.->|":9464/metrics"| loop
@@ -102,7 +102,7 @@ flowchart LR
   - Worker crash: other workers take over that worker's runs.
   - A run that keeps killing workers: the run fails after N claims.
   - Changed workflow code: the run fails loudly.
-  - Host loss takes everything down: SOF is single-host by design.
+  - Host loss takes everything down: SLOM is single-host by design.
 - **State.** Two tables, `runs` and `steps`. Nothing else is persisted.
 - **External dependencies.** An LLM server. That's all.
 
@@ -136,15 +136,15 @@ CPUs, 32 GB, CPU only) running normal background software. Methodology and cavea
 
 ### 1. The orchestration makes a 0.5B model succeed more often
 
-Qwen2.5-0.5B-Instruct (Q4_K_M) on slm-runtime, greedy decoding, 42 arithmetic word problems
-(6 templates × 7, exact integer answers). The question is whether SOF gets a tiny model to
+Qwen2.5-0.5B-Instruct (Q4_K_M) on slim-serve, greedy decoding, 42 arithmetic word problems
+(6 templates × 7, exact integer answers). The question is whether SLOM gets a tiny model to
 *use a tool and finish*. It's a narrow test by design, not a general agent benchmark.
 
 | Mode | Correct | Held-out (39)¹ | Runs that answered | Model calls / run | p50 time / run |
 |---|---|---|---|---|---|
 | CoT baseline (1 call, no tools, "think step by step") | 16/42 (38%) | 16/39 | 42/42 | 1.0 | 5.7 s |
-| SOF agent, generic JSON protocol | 20/42 (48%) | 19/39 | 42/42 | 3.24 | 5.8 s |
-| SOF agent, Qwen-native protocol | **28/42 (67%)** | **26/39** | 42/42 | 2.0 | 5.0 s |
+| SLOM agent, generic JSON protocol | 20/42 (48%) | 19/39 | 42/42 | 3.24 | 5.8 s |
+| SLOM agent, Qwen-native protocol | **28/42 (67%)** | **26/39** | 42/42 | 2.0 | 5.0 s |
 
 ¹ Three problems were inspected while designing the repeat guard and forced answer.
 
@@ -185,10 +185,10 @@ were never re-executed in any trial (also asserted by `tests/test_crash.py`).
 
 ### 3. Backpressure: match the client to the server, and jitter the retries
 
-slm-runtime with the fake engine (2 replicas, queue of 2, 0.2 s per call), 40 runs × 3 calls
+slim-serve with the fake engine (2 replicas, queue of 2, 0.2 s per call), 40 runs × 3 calls
 submitted at once; ideal makespan 12.0 s. Two interleaved repetitions:
 
-| SOF LLM concurrency | Makespan | p95 run latency | Server 503s | Every run completed |
+| SLOM LLM concurrency | Makespan | p95 run latency | Server 503s | Every run completed |
 |---|---|---|---|---|
 | 2 (= replicas) | 14.2–14.7 s | 14.0–14.4 s | 0 | yes |
 | 4 (= replicas + queue) | **12.9 s** | 12.7 s | 0 | yes |
@@ -234,9 +234,9 @@ journal adds well under 1% to a model-bound step.
 | Worker stalled past its lease | its writes are rejected; it abandons the run | fencing token |
 | Run crashes every worker | failed after `SOF_MAX_RUN_ATTEMPTS` (5) claims | `attempts` counter |
 | `SIGTERM` | stop claiming; in-flight runs get `SOF_SHUTDOWN_GRACE_S`, then are handed back (not failed) | `Worker._drain` + `Store.release` |
-| Cancel | pending: immediate. Running: within `lease_s/3`; the HTTP stream closes, so slm-runtime stops generating | heartbeat reads the cancel flag |
+| Cancel | pending: immediate. Running: within `lease_s/3`; the HTTP stream closes, so slim-serve stops generating | heartbeat reads the cancel flag |
 | Duplicate submit | same `run_id` + same input returns the same run; different input returns `409` | `Store.submit` |
-| Embedded worker dies (`sof serve`) | logged; `/readyz` turns `503` | done-callback |
+| Embedded worker dies (`slom serve`) | logged; `/readyz` turns `503` | done-callback |
 
 ## Observability
 
@@ -251,17 +251,17 @@ journal adds well under 1% to a model-bound step.
 | `sof_step_retries_total{step,error}` | Where are retries going, and why? |
 | `sof_steps_replayed_total{step}` | Recovery at work: steps answered from the journal |
 | `sof_leases_lost_total` | Workers stalling past their lease |
-| `sof_llm_ttft_seconds`, `sof_llm_tokens_total{kind}`, `sof_llm_errors_total{cause}` | Model latency as SOF sees it; overload vs timeouts vs bad requests |
+| `sof_llm_ttft_seconds`, `sof_llm_tokens_total{kind}`, `sof_llm_errors_total{cause}` | Model latency as SLOM sees it; overload vs timeouts vs bad requests |
 | `sof_agent_runs_total{status}`, `sof_agent_invalid_outputs_total`, `sof_tool_calls_total{tool,ok}` | Is the model following the protocol? Are tools succeeding? |
 
 Replayed steps never touch the latency, token or error metrics, so a recovery doesn't look like
 a burst of very fast model calls.
 
-**Logs.** Structured, in the same format as slm-runtime (`SOF_LOG_JSON=true` for JSON lines).
+**Logs.** Structured, in the same format as slim-serve (`SOF_LOG_JSON=true` for JSON lines).
 Run-scoped lines carry `run_id`.
 
 **Correlation.** Every model call carries `X-Request-ID: <run_id>.<step>.<attempt>`. It's stored
-in the run's result (`steps[].llm_request_id`) and logged by slm-runtime on its access line, so
+in the run's result (`steps[].llm_request_id`) and logged by slim-serve on its access line, so
 `grep <run_id>` works across both services. The test suite asserts that the two lists match.
 
 **Live progress.** `GET /v1/runs/{id}` returns the steps journaled so far, with attempts and
@@ -269,7 +269,7 @@ durations, while the run is still going.
 
 ## Quick start
 
-Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/), plus a running slm-runtime.
+Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/), plus a running slim-serve.
 
 ```bash
 # 1. The model server (separate repo)
@@ -277,12 +277,12 @@ git clone https://github.com/ragnarlothbrok53/slm-inference-engine.git
 cd slm-inference-engine && uv sync --extra llama
 mkdir -p models && curl -L -o models/qwen2.5-0.5b-instruct-q4_k_m.gguf \
   https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf
-uv run slm-runtime serve                     # :8000
+uv run slim-serve serve                     # :8000
 
-# 2. SOF
-git clone https://github.com/ragnarlothbrok53/sof.git && cd sof
+# 2. SLOM
+git clone https://github.com/ragnarlothbrok53/slom.git && cd slom
 uv sync
-uv run sof run "A shop sells pens at 17 rupees each. Priya buys 23 pens and pays a 4 rupee delivery fee. How much does she pay?" --protocol qwen
+uv run slom run "A shop sells pens at 17 rupees each. Priya buys 23 pens and pays a 4 rupee delivery fee. How much does she pay?" --protocol qwen
 ```
 
 Real output of that command (Qwen2.5-0.5B on a laptop CPU):
@@ -303,7 +303,7 @@ The *answer is wrong*: the model subtracted the delivery fee. In the evaluation 
 `price * qty - fee` on all 7 problems of this template, with both protocols. No amount of
 orchestration fixes a wrong formula that is then computed faithfully. See [Performance](#performance--evaluation).
 
-**Docker** (the whole stack; slm-runtime is built from its GitHub tag):
+**Docker** (the whole stack; slim-serve is built from its GitHub tag):
 
 ```bash
 mkdir -p models   # put the GGUF here, as above
@@ -315,7 +315,7 @@ docker compose up --scale worker=3         # more workers on the same journal
 ## Usage
 
 ```bash
-uv run sof serve        # API + worker, http://127.0.0.1:8080
+uv run slom serve        # API + worker, http://127.0.0.1:8080
 
 # Submit and wait for the result
 curl -s 'localhost:8080/v1/runs?wait=true' -H 'content-type: application/json' \
@@ -337,9 +337,9 @@ curl -s -X POST localhost:8080/v1/runs/order-42/cancel
 ```python
 import asyncio
 from pydantic import BaseModel, Field
-from sof import BUILTIN_TOOLS, ToolError, idempotency_key, tool
-from sof.config import Settings
-from sof.worker import serve_worker
+from slom import BUILTIN_TOOLS, ToolError, idempotency_key, tool
+from slom.config import Settings
+from slom.worker import serve_worker
 
 class RefundArgs(BaseModel):
     order_id: str = Field(description="e.g. A-1001")
@@ -358,29 +358,29 @@ asyncio.run(serve_worker(Settings(), tools=[*BUILTIN_TOOLS, refund]))
 **Writing other workflows.** The engine isn't agent-specific:
 
 ```python
-from sof import RunContext, Store, Worker, Workflow
+from slom import RunContext, Store, Worker, Workflow
 
 async def pipeline(ctx: RunContext, doc_id: str) -> str:
     text = await ctx.step("fetch", fetch_document, doc_id)
     summary = await ctx.step("summarize", summarize, text)   # not repaid after a crash
     return await ctx.step("store", save_summary, summary)
 
-worker = Worker(Store("sof.db"), [Workflow.define("pipeline", pipeline)])
+worker = Worker(Store("slom.db"), [Workflow.define("pipeline", pipeline)])
 ```
 
 ## Configuration
 
 Environment variables (prefix `SOF_`), a `.env` file (see [`.env.example`](.env.example)), or CLI
 flags (`--db`, `--llm-url`, `--host`, `--port`), which take precedence. Full definitions, types
-and bounds are in [`config.py`](src/sof/config.py).
+and bounds are in [`config.py`](src/slom/config.py).
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `SOF_DB_PATH` | `sof.db` | The SQLite journal, shared by the API and workers on this host |
+| `SOF_DB_PATH` | `slom.db` | The SQLite journal, shared by the API and workers on this host |
 | `SOF_DB_SYNCHRONOUS` | `FULL` | `FULL`: finished steps survive power loss. `NORMAL`: survive crashes only; cheaper commits |
-| `SOF_LLM_BASE_URL` | `http://127.0.0.1:8000` | slm-runtime or another OpenAI-compatible server |
-| `SOF_LLM_CONCURRENCY` | `1` | Model calls in flight per worker. Set to slm-runtime's `SLM_REPLICAS`; never above replicas + queue |
-| `SOF_LLM_TIMEOUT_S` | `130` | Per attempt; keep it above slm-runtime's 120 s deadline |
+| `SOF_LLM_BASE_URL` | `http://127.0.0.1:8000` | slim-serve or another OpenAI-compatible server |
+| `SOF_LLM_CONCURRENCY` | `1` | Model calls in flight per worker. Set to slim-serve's `SLM_REPLICAS`; never above replicas + queue |
+| `SOF_LLM_TIMEOUT_S` | `130` | Per attempt; keep it above slim-serve's 120 s deadline |
 | `SOF_LLM_MAX_ATTEMPTS` | `8` | Per model call; about 45–90 s of tolerated outage |
 | `SOF_MAX_CONCURRENT_RUNS` | `8` | Runs one worker executes at once |
 | `SOF_LEASE_S` | `15` | Recovery time after a crash vs heartbeat write rate |
@@ -394,7 +394,7 @@ and bounds are in [`config.py`](src/sof/config.py).
 ## Testing
 
 ```bash
-uv sync                      # dev deps include slm-runtime v0.1.0 for the contract tests
+uv sync                      # dev deps include slim-serve v0.1.0 for the contract tests
 uv run pytest                # 124 tests, ~30 s
 uv run ruff check . && uv run ruff format --check . && uv run mypy
 ```
@@ -419,9 +419,9 @@ What the tests pin down ([`tests/`](tests/)):
   - a resumed run makes exactly one more model call, with a byte-identical prompt.
 - **LLM client** (`test_llm.py`): SSE parsing, the status-code → retry mapping, in-band errors,
   truncated streams, total deadline, concurrency cap, readiness.
-- **Contract with slm-runtime** (`test_integration.py`, the real v0.1.0 server over a socket):
+- **Contract with slim-serve** (`test_integration.py`, the real v0.1.0 server over a socket):
   - an end-to-end agent run, with request IDs matching one-to-one between the journal and
-    slm-runtime's logs;
+    slim-serve's logs;
   - a server with no queue, oversubscribed 4×: every 503 is retried, every run completes, and no
     model call runs twice;
   - cancelling a run stops generation on the server.
@@ -441,15 +441,15 @@ What the tests pin down ([`tests/`](tests/)):
 - a non-streaming client.
 
 CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs lint, format, strict mypy and all
-tests, and brings up the compose stack (slm-runtime with the fake engine) to push a run through
-API → journal → worker → slm-runtime and back.
+tests, and brings up the compose stack (slim-serve with the fake engine) to push a run through
+API → journal → worker → slim-serve and back.
 
 ## Benchmarking
 
 ```bash
 uv run python benchmarks/bench_engine.py      # journal overhead, FULL vs NORMAL  (~1 min, no model)
 uv run python benchmarks/bench_recovery.py    # kill workers, measure recovery   (~3 min, no model)
-uv run python benchmarks/bench_overload.py    # vs a real slm-runtime, fake engine (~4 min)
+uv run python benchmarks/bench_overload.py    # vs a real slim-serve, fake engine (~4 min)
 uv run python benchmarks/eval_agent.py --llm-url http://127.0.0.1:8000   # real model (~40 min on CPU)
 ```
 
@@ -459,7 +459,7 @@ Each writes `benchmarks/results/<name>/summary.json` (environment, commit, confi
 ## Design tradeoffs
 
 **Why not Temporal?** The previous version of this repo used it. Temporal is the right tool for
-multi-host workers, long timers, signals, versioned workflows and an ops UI. SOF needs none of
+multi-host workers, long timers, signals, versioned workflows and an ops UI. SLOM needs none of
 these for its target use case, a few workers next to a local model, and each of them would add a
 cluster to run first. If you need them, the concepts map directly: steps are activities, the
 journal is the event history, the lease is the heartbeat timeout.
@@ -485,10 +485,10 @@ writing process per file. Postgres is the scale-out path (see below).
 
 **Current limitations:**
 - ChatML models only, via raw completions (the chat template is applied client-side).
-- No constrained decoding (slm-runtime has no grammar support).
+- No constrained decoding (slim-serve has no grammar support).
 - No auth or multi-tenancy on the API.
 - `?wait=true` and idle workers poll the journal.
-- The MLX backend path is untested here, as in slm-runtime.
+- The MLX backend path is untested here, as in slim-serve.
 
 **At 10x scale I would change:**
 1. **Storage.** Move `store.py` to Postgres: `FOR UPDATE SKIP LOCKED` claims, the same fencing
@@ -497,9 +497,9 @@ writing process per file. Postgres is the scale-out path (see below).
 2. **Backpressure.** Use a global LLM concurrency budget (a token bucket in the database, or a
    gateway) instead of a per-worker cap, since workers × cap must stay within the servers'
    replicas + queue. Route model calls by queue depth (`slm_queue_depth`) across several
-   slm-runtime instances.
+   slim-serve instances.
 3. **Output constraints.** Use constrained decoding (a GBNF grammar from the tool schemas) in
-   slm-runtime instead of prefill-and-repair. It removes invalid output by construction.
+   slim-serve instead of prefill-and-repair. It removes invalid output by construction.
 4. **Deploys.** Add workflow versioning (a version on each run, old code kept until the run
    drains) and retention for finished runs.
 5. **Tracing.** Use OpenTelemetry once tools call other services; the step request ID is where the
@@ -507,18 +507,18 @@ writing process per file. Postgres is the scale-out path (see below).
 
 ## Roadmap
 
-- `grammar` / `response_format` support in slm-runtime, and a constrained-decoding protocol here
+- `grammar` / `response_format` support in slim-serve, and a constrained-decoding protocol here
 - Postgres store behind the same interface
-- `sof prune --older-than` (journal retention)
+- `slom prune --older-than` (journal retention)
 - A version field on runs, for safe deploys of changed workflows
 - Evaluation beyond arithmetic word problems (multi-tool tasks), and on 1.5B / 3B models
 
 ## Project structure
 
 ```
-src/sof/      engine.py · store.py · agent.py · prompts.py · parsing.py · llm.py · tools.py
+src/slom/      engine.py · store.py · agent.py · prompts.py · parsing.py · llm.py · tools.py
               api.py · worker.py · cli.py · config.py · contracts.py · metrics.py · logs.py
-tests/        engine, store, agent, API, LLM client, slm-runtime contract, process-kill recovery
+tests/        engine, store, agent, API, LLM client, slim-serve contract, process-kill recovery
 benchmarks/   bench_engine · bench_recovery · bench_overload · eval_agent · data/ · results/
 docs/         architecture.md · design-decisions.md · benchmarking.md
 ```

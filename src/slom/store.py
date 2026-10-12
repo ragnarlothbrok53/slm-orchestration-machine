@@ -124,7 +124,7 @@ class Store:
         self.path = str(path)
         self.synchronous = synchronous
         self.clock = clock  # wall clock: leases are compared across processes
-        self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="sof-db")
+        self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="slom-db")
         self._conn: sqlite3.Connection | None = None
 
     # --- plumbing -------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-"""LlmClient: parsing slm-runtime's SSE stream and mapping its failures to retry decisions."""
+"""LlmClient: parsing slim-serve's SSE stream and mapping its failures to retry decisions."""
 
 from __future__ import annotations
 
@@ -9,9 +9,9 @@ from collections.abc import Callable
 import httpx
 import pytest
 
-from sof.contracts import LlmRequest
-from sof.engine import PermanentError, RetryableError
-from sof.llm import LlmClient
+from slom.contracts import LlmRequest
+from slom.engine import PermanentError, RetryableError
+from slom.llm import LlmClient
 
 pytestmark = pytest.mark.anyio
 
@@ -59,10 +59,10 @@ async def test_streams_text_usage_and_sends_request_payload() -> None:
 @pytest.mark.parametrize(
     ("status", "headers", "error", "retry_after"),
     [
-        (503, {"retry-after": "1"}, RetryableError, 1.0),  # slm-runtime: queue full
+        (503, {"retry-after": "1"}, RetryableError, 1.0),  # slim-serve: queue full
         (503, {}, RetryableError, None),  # model still loading
         (429, {"retry-after": "7"}, RetryableError, 7.0),
-        (504, {}, RetryableError, None),  # slm-runtime: deadline exceeded
+        (504, {}, RetryableError, None),  # slim-serve: deadline exceeded
         (500, {}, RetryableError, None),  # engine error
         (408, {}, RetryableError, None),
         (400, {}, PermanentError, None),  # e.g. max_tokens over the server's limit

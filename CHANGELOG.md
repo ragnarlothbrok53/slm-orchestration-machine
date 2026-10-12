@@ -23,20 +23,20 @@ Temporal workflow which echoed its input, with no model, tools or tests.
   answers cut off before their closing.
 - Tools: a typed registry (`@tool` with a pydantic argument model), a safe AST-based calculator,
   `utc_now`, and `idempotency_key()` for side-effecting tools.
-- Streaming client for slm-runtime / OpenAI-compatible `/v1/completions`: maps
+- Streaming client for slim-serve / OpenAI-compatible `/v1/completions`: maps
   503/429/504/5xx/4xx, in-band errors and truncated streams to retry decisions; client-side
   concurrency cap; `X-Request-ID = run.seq.attempt` propagation.
 - HTTP API: `POST /v1/runs` (idempotent `run_id`, optional `?wait=true`), `GET /v1/runs/{id}`
   with live step progress, `POST /v1/runs/{id}/cancel`, `/healthz`, `/readyz`, `/metrics`.
-- CLI: `sof serve` (API and worker in one process), `sof api`, `sof worker`, `sof run`.
+- CLI: `slom serve` (API and worker in one process), `slom api`, `slom worker`, `slom run`.
 - Prometheus metrics for runs, steps, retries, replayed steps, LLM TTFT/tokens/errors, agent
-  outcomes and tool calls. Structured logging in the same format as slm-runtime.
+  outcomes and tool calls. Structured logging in the same format as slim-serve.
 - Tests (124): unit tests, engine semantics, API contract, contract tests against the real
-  slm-runtime v0.1.0 server, and crash recovery with a killed worker process. The tests were
+  slim-serve v0.1.0 server, and crash recovery with a killed worker process. The tests were
   checked by mutation.
 - Benchmarks with committed results: journal overhead, crash recovery, overload/backpressure
-  against slm-runtime, and task success with Qwen2.5-0.5B.
-- Dockerfile (non-root, one image for all roles), docker-compose with slm-runtime built from its
+  against slim-serve, and task success with Qwen2.5-0.5B.
+- Dockerfile (non-root, one image for all roles), docker-compose with slim-serve built from its
   `v0.1.0` tag, `.env.example`, GitHub Actions CI (lint, format, mypy strict, tests, compose
   smoke test).
 

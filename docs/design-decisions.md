@@ -6,7 +6,7 @@ Numbers come from [`benchmarks/results/`](../benchmarks/results/); how they were
 
 ## 1. A small durable-execution engine instead of Temporal / DBOS / Restate
 
-**Decision.** SOF implements durable execution itself, in two modules: `store.py`, about 350 lines,
+**Decision.** SLOM implements durable execution itself, in two modules: `store.py`, about 350 lines,
 and `engine.py`, about 450, including docstrings.
 
 **Alternatives.**
@@ -151,7 +151,7 @@ and backed off further while the server sat idle. The batch took 123–182 s, ag
 not oversubscribed. With jitter it took 29–30 s. The pre-jitter result is kept in
 `benchmarks/results/overload-nojitter/`.
 
-**Mapping of slm-runtime's contract** (`llm.py`):
+**Mapping of slim-serve's contract** (`llm.py`):
 
 | Response | Action |
 |---|---|
@@ -167,7 +167,7 @@ restart. This is pinned by a test.
 ## 8. Client-side LLM concurrency matched to server capacity
 
 **Decision.** Each worker caps its in-flight model calls (`SOF_LLM_CONCURRENCY`, default 1, the
-slm-runtime default replica count). Calls beyond the cap wait in the worker. The per-attempt
+slim-serve default replica count). Calls beyond the cap wait in the worker. The per-attempt
 deadline starts only once a slot is acquired.
 
 **Why, measured** (`bench_overload`: 2 replicas, queue of 2, 40 runs × 3 calls, ideal makespan
@@ -181,13 +181,13 @@ deadline starts only once a slot is acquired.
 
 The server's admission control (503) is a safety net, not a scheduler. It fails fast, but every
 rejection costs at least `Retry-After`. Keep the cap at or below replicas + queue. Note that
-slm-runtime's deadline (`SLM_REQUEST_TIMEOUT_S`) includes time in its queue, so a deep server queue
+slim-serve's deadline (`SLM_REQUEST_TIMEOUT_S`) includes time in its queue, so a deep server queue
 also risks 504s; waiting on the client side doesn't.
 
 ## 9. The LLM client always streams
 
 **Why.**
-1. **Cancellation reaches the model.** Cancelling a run closes the HTTP stream, slm-runtime
+1. **Cancellation reaches the model.** Cancelling a run closes the HTTP stream, slim-serve
    detects the disconnect and stops generating within about one token. A non-streaming request
    would keep a replica busy until `max_tokens`. This is tested against the real server in
    `test_cancelling_a_run_stops_generation_on_the_server`.
@@ -196,7 +196,7 @@ also risks 504s; waiting on the client side doesn't.
 
 ## 10. Two prompt protocols, chosen by measurement
 
-**Decision.** slm-runtime serves raw completions, so SOF owns the chat template (ChatML). There
+**Decision.** slim-serve serves raw completions, so SLOM owns the chat template (ChatML). There
 are two protocols:
 - **`json`** is generic: `{"tool": ..., "args": ...}` or `{"answer": ...}`, with the assistant turn
   prefilled with `{`.
@@ -213,7 +213,7 @@ Results are in [benchmarking.md](benchmarking.md#4-task-success-with-a-real-mode
   `{"answer": "`, leaving the model no option but to answer. Greedy decoding plus in-context
   copying otherwise made the 0.5B model repeat its previous turn verbatim until `max_steps`.
 
-**Why not constrained decoding (grammars).** It would be the stronger tool, but slm-runtime
+**Why not constrained decoding (grammars).** It would be the stronger tool, but slim-serve
 v0.1.0 has no grammar support. Adding a `grammar` / `response_format` parameter there is on the
 roadmap.
 
@@ -240,6 +240,6 @@ roadmap.
   metrics. Workflow-level metrics (invalid outputs, agent outcomes) are guarded by
   `ctx.replaying`.
 - **No distributed tracing yet.** Instead, the journal's step identity is propagated as
-  `X-Request-ID = run.seq.attempt`, which slm-runtime logs, so one ID finds a model call in both
+  `X-Request-ID = run.seq.attempt`, which slim-serve logs, so one ID finds a model call in both
   services' logs. This is tested end to end. OpenTelemetry becomes worth it with more hops (tools
   calling services), and the request ID is where a trace ID would go.

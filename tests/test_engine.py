@@ -11,7 +11,7 @@ import pytest
 from conftest import FakeClock
 from helpers import sample_value, wait_for
 
-from sof.engine import (
+from slom.engine import (
     PermanentError,
     RetryableError,
     RetryPolicy,
@@ -21,8 +21,8 @@ from sof.engine import (
     Workflow,
     step_info,
 )
-from sof.metrics import Metrics
-from sof.store import StepRecord, Store
+from slom.metrics import Metrics
+from slom.store import StepRecord, Store
 
 pytestmark = pytest.mark.anyio
 

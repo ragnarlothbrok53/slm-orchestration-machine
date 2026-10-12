@@ -10,10 +10,10 @@ import sys
 
 from workloads import STEPS
 
-from sof.engine import Worker
-from sof.logs import configure_logging
-from sof.metrics import Metrics
-from sof.store import Store
+from slom.engine import Worker
+from slom.logs import configure_logging
+from slom.metrics import Metrics
+from slom.store import Store
 
 
 async def main(db: str, lease_s: float) -> None:

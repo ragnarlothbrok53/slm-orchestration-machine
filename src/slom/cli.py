@@ -1,4 +1,4 @@
-"""Command line: ``sof serve | api | worker | run``. Flags override ``SOF_*`` variables."""
+"""Command line: ``slom serve | api | worker | run``. Flags override ``SOF_*`` variables."""
 
 from __future__ import annotations
 
@@ -39,7 +39,7 @@ def serve(
     host: Annotated[str | None, typer.Option(help="[SOF_API_HOST]")] = None,
     port: Annotated[int | None, typer.Option(help="[SOF_API_PORT]")] = None,
 ) -> None:
-    """API and one worker in a single process: the simplest way to run SOF."""
+    """API and one worker in a single process: the simplest way to run SLOM."""
     settings = _settings(db=db, llm_url=llm_url, host=host, port=port)
     configure_logging(settings.log_level, settings.log_json)
 
@@ -57,7 +57,7 @@ def api_only(
     host: Annotated[str | None, typer.Option(help="[SOF_API_HOST]")] = None,
     port: Annotated[int | None, typer.Option(help="[SOF_API_PORT]")] = None,
 ) -> None:
-    """The API alone; run workers separately with `sof worker`."""
+    """The API alone; run workers separately with `slom worker`."""
     settings = _settings(db=db, host=host, port=port)
     configure_logging(settings.log_level, settings.log_json)
     uvicorn.run(

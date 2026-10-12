@@ -8,8 +8,8 @@ Four benchmarks, each answering one question. All of them write
 |---|---|---|
 | `bench_engine.py` | What does durability cost per step? | nothing |
 | `bench_recovery.py` | When a worker dies, how long until its run moves again, and what runs twice? | nothing |
-| `bench_overload.py` | How should SOF's LLM concurrency relate to the server's capacity? | slm-runtime (dev dependency; fake engine) |
-| `eval_agent.py` | Does the orchestration make a small model succeed at a tool task? | slm-runtime with a real model |
+| `bench_overload.py` | How should SLOM's LLM concurrency relate to the server's capacity? | slim-serve (dev dependency; fake engine) |
+| `eval_agent.py` | Does the orchestration make a small model succeed at a tool task? | slim-serve with a real model |
 
 ## Environment
 
@@ -88,9 +88,9 @@ and 4.54 s, and 1 duplicate in 20.
 ## 3. Overload and backpressure (`bench_overload.py`)
 
 **Workload.**
-- slm-runtime runs as a subprocess with the `fake` engine: 2 replicas, a queue of 2,
+- slim-serve runs as a subprocess with the `fake` engine: 2 replicas, a queue of 2,
   50 ms TTFT and 10 ms per token, 16 tokens per call, so a call costs 0.2 s.
-- 40 runs are submitted at once, each a chain of 3 model calls (120 calls in total). One SOF
+- 40 runs are submitted at once, each a chain of 3 model calls (120 calls in total). One SLOM
   worker with up to 40 runs in flight sends them, capped at C concurrent model calls.
 - C is 2 (= replicas), 4 (= replicas + queue) and 16 (oversubscribed).
 - Configurations are interleaved and repeated twice.
@@ -100,13 +100,13 @@ and 4.54 s, and 1 duplicate in 20.
 - makespan;
 - run latency p50 and p95;
 - the server's `slm_rejected_total` (503s), scraped from its `/metrics`;
-- SOF's retry counter.
+- SLOM's retry counter.
 
 Every run must complete in every configuration.
 
 **Results** (commit `6ddad67`, two interleaved repetitions):
 
-| Cap | Makespan | Run p50 | Run p95 | Server 503s | SOF retries | Completed |
+| Cap | Makespan | Run p50 | Run p95 | Server 503s | SLOM retries | Completed |
 |---|---|---|---|---|---|---|
 | 2 | 14.2–14.7 s | 12.0–12.5 s | 14.0–14.4 s | 0 | 0 | 40/40 |
 | 4 | 12.9 s | 10.9–11.0 s | 12.7 s | 0 | 0 | 40/40 |
@@ -134,7 +134,7 @@ setup):
 
 ## 4. Task success with a real model (`eval_agent.py`)
 
-**Model and server.** Qwen2.5-0.5B-Instruct, Q4_K_M GGUF (469 MB), served by slm-runtime v0.1.0
+**Model and server.** Qwen2.5-0.5B-Instruct, Q4_K_M GGUF (469 MB), served by slim-serve v0.1.0
 on the CPU above (llama.cpp backend, one replica). Decoding is greedy (temperature 0).
 
 **Data.** `benchmarks/data/arith.jsonl`: 42 arithmetic word problems, 7 for each of 6 templates
@@ -152,7 +152,7 @@ It says nothing about general reasoning, multi-tool planning or other models.
 | Mode | What runs |
 |---|---|
 | `cot` | One call, no tools. The system prompt asks for step-by-step reasoning and a final `Answer: <number>` line (max 384 tokens). This is the model on its own, with the standard prompting trick. |
-| `agent-json` | The SOF agent, generic JSON protocol (prefill `{`, repair prompts, repeat guard, forced answer), calculator tool, up to 6 model calls. |
+| `agent-json` | The SLOM agent, generic JSON protocol (prefill `{`, repair prompts, repeat guard, forced answer), calculator tool, up to 6 model calls. |
 | `agent-qwen` | The same, with Qwen2.5's native `<tool_call>` format. |
 
 Agent runs go through the full stack (journal, worker, retries, streaming client), not a
@@ -210,7 +210,7 @@ uv sync
 uv run python benchmarks/bench_engine.py
 uv run python benchmarks/bench_recovery.py --trials 10 --lease 2 5
 uv run python benchmarks/bench_overload.py
-# real model: start slm-runtime first (see the README), then
+# real model: start slim-serve first (see the README), then
 uv run python benchmarks/eval_agent.py --llm-url http://127.0.0.1:8000
 ```
 
