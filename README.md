@@ -1,16 +1,16 @@
-# SOF: durable agents for small language models
+# SLOM — Small Language Orchestration Machine
 
-SOF runs tool-using agents on 0.5–3B models as **durable workflows**: every model call and tool
+SLOM runs tool-using agents on 0.5–3B models as **durable workflows**: every model call and tool
 call is journaled to SQLite, so a crashed worker's runs resume elsewhere without paying for
 finished model calls again. There is no orchestration server to run: it's a Python package plus
 a SQLite file.
 
-[![CI](https://github.com/ragnarlothbrok53/sof/actions/workflows/ci.yml/badge.svg)](https://github.com/ragnarlothbrok53/sof/actions/workflows/ci.yml)
+[![CI](https://github.com/ragnarlothbrok53/slm-orchestration-machine/actions/workflows/ci.yml/badge.svg)](https://github.com/ragnarlothbrok53/slm-orchestration-machine/actions/workflows/ci.yml)
 
-SOF is the orchestration layer above [**slm-runtime**](https://github.com/ragnarlothbrok53/slm-inference-engine),
-a small inference server for local models. slm-runtime decides *whether* a request runs now
+SLOM is the orchestration layer above [**SLIM**](https://github.com/ragnarlothbrok53/slm-inference-machine),
+a small inference server for local models. SLIM decides *whether* a request runs now
 (admission control, deadlines, `503 + Retry-After`) and explicitly leaves retry policy to the
-caller. SOF is that caller.
+caller. SLOM is that caller.
 
 ## Why this exists
 
