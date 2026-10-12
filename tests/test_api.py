@@ -11,10 +11,10 @@ import httpx
 import pytest
 from helpers import ScriptedLlm, make_worker
 
-from sof.api import create_app
-from sof.config import Settings
-from sof.metrics import Metrics
-from sof.store import Store
+from slom.api import create_app
+from slom.config import Settings
+from slom.metrics import Metrics
+from slom.store import Store
 
 pytestmark = pytest.mark.anyio
 

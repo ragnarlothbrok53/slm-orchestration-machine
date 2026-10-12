@@ -30,7 +30,7 @@ class LlmResponse:
     completion_tokens: int
     ttft_s: float | None
     latency_s: float
-    request_id: str  # X-Request-ID sent to the server: grep slm-runtime's logs for it
+    request_id: str  # X-Request-ID sent to the server: grep slim-serve's logs for it
 
 
 # --- tool steps ---
@@ -66,7 +66,7 @@ class AgentInput:
     max_repairs: int = 2  # re-prompts allowed for unusable model output, per run
     max_tokens: int = 256
     temperature: float = 0.0
-    protocol: Literal["json", "qwen"] = "json"  # see sof.prompts
+    protocol: Literal["json", "qwen"] = "json"  # see slom.prompts
 
 
 StepKind = Literal["tool", "answer", "invalid", "repeat"]  # repeat: re-issued an earlier call

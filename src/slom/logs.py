@@ -1,6 +1,6 @@
 """Logging setup: human-readable by default, one JSON object per line with ``SOF_LOG_JSON=true``.
 
-Same format and conventions as slm-runtime, so the two services' logs can be read side by side.
+Same format and conventions as slim-serve, so the two services' logs can be read side by side.
 """
 
 from __future__ import annotations

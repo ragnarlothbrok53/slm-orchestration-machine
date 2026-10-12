@@ -1,18 +1,18 @@
 """Task success with a real small model: does the orchestration make it reliably right?
 
-Modes, all against the same slm-runtime server and model, greedy decoding (temperature 0):
+Modes, all against the same slim-serve server and model, greedy decoding (temperature 0):
 
 * ``cot``: one model call, no tools; the prompt asks it to reason step by step and end with
   ``Answer: <number>``. The baseline: what the model does on its own.
-* ``agent-json``: SOF's agent with the calculator, generic JSON protocol (prefill, repair, guard).
+* ``agent-json``: SLOM's agent with the calculator, generic JSON protocol (prefill, repair, guard).
 * ``agent-qwen``: the same, with Qwen2.5's native tool-call format.
 
 Agents run through the full stack (journal, worker, retries), not a shortcut. Grading: the last
 number in the final answer must equal the expected integer.
 
-Requires a running slm-runtime with a real model, e.g. in the slm-inference-engine repo:
+Requires a running slim-serve with a real model, e.g. in the slm-inference-engine repo:
 
-    uv run slm-runtime serve            # Qwen2.5-0.5B-Instruct Q4_K_M by default
+    uv run slim-serve serve            # Qwen2.5-0.5B-Instruct Q4_K_M by default
     uv run python benchmarks/eval_agent.py --llm-url http://127.0.0.1:8000
 """
 
@@ -31,15 +31,15 @@ import httpx
 from common import summarize, write_results
 from pydantic import TypeAdapter
 
-from sof.agent import WORKFLOW_NAME
-from sof.config import Settings
-from sof.contracts import AgentInput, AgentResult, LlmRequest
-from sof.llm import LlmClient
-from sof.logs import configure_logging
-from sof.metrics import Metrics
-from sof.prompts import STOP, chatml
-from sof.store import TERMINAL, Store
-from sof.worker import agent_worker
+from slom.agent import WORKFLOW_NAME
+from slom.config import Settings
+from slom.contracts import AgentInput, AgentResult, LlmRequest
+from slom.llm import LlmClient
+from slom.logs import configure_logging
+from slom.metrics import Metrics
+from slom.prompts import STOP, chatml
+from slom.store import TERMINAL, Store
+from slom.worker import agent_worker
 
 DATA = Path(__file__).parent / "data" / "arith.jsonl"
 # Problems looked at while developing the agent loop (repeat guard, forced answer). Accuracy is

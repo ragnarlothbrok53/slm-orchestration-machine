@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="SOF_", env_file=".env", extra="ignore")
 
     # --- durable state ---
-    db_path: str = Field("sof.db", description="SQLite journal, shared by the API and workers.")
+    db_path: str = Field("slom.db", description="SQLite journal, shared by the API and workers.")
     db_synchronous: Literal["FULL", "NORMAL"] = Field(
         "FULL",
         description="FULL: finished steps survive power loss. NORMAL: they survive process "
@@ -35,12 +35,12 @@ class Settings(BaseSettings):
     )
     shutdown_grace_s: float = Field(10.0, ge=0, description="Time in-flight runs get on SIGTERM.")
 
-    # --- LLM backend (any OpenAI-compatible /v1/completions server; built for slm-runtime) ---
+    # --- LLM backend (any OpenAI-compatible /v1/completions server; built for slim-serve) ---
     llm_base_url: str = "http://127.0.0.1:8000"
     llm_timeout_s: float = Field(
         130.0,
         gt=0,
-        description="Per-attempt limit. Keep it above slm-runtime's SLM_REQUEST_TIMEOUT_S (120) "
+        description="Per-attempt limit. Keep it above slim-serve's SLM_REQUEST_TIMEOUT_S (120) "
         "so the server's own 504 arrives first.",
     )
     llm_max_attempts: int = Field(
@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     llm_concurrency: int = Field(
         1,
         ge=1,
-        description="LLM calls one worker sends at once. Match slm-runtime's SLM_REPLICAS: more "
+        description="LLM calls one worker sends at once. Match slim-serve's SLM_REPLICAS: more "
         "requests only wait in its queue, and past replicas + queue size it answers 503.",
     )
 

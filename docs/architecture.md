@@ -23,7 +23,7 @@ flowchart LR
         wf --> tools
     end
 
-    llmc -->|"POST /v1/completions (SSE)<br/>X-Request-ID = run.seq.attempt"| slm["slm-runtime<br/>(separate repo)"]
+    llmc -->|"POST /v1/completions (SSE)<br/>X-Request-ID = run.seq.attempt"| slm["slim-serve<br/>(separate repo)"]
     slm -.->|"503 + Retry-After · 504 · 400"| llmc
     prom([Prometheus]) -->|"/metrics"| api
     prom -->|":9464/metrics"| loop
@@ -38,13 +38,13 @@ flowchart LR
 | Protocols | `prompts.py`, `parsing.py` | ChatML rendering and reply parsing for the `json` and `qwen` formats. Pure functions. |
 | LLM client | `llm.py` | Streaming `/v1/completions`, maps status codes to retry decisions, caps concurrency. |
 | Tools | `tools.py` | Typed tool registry, safe calculator, idempotency keys. |
-| Wiring | `worker.py`, `cli.py` | Builds a worker from settings; `sof serve / api / worker / run`. |
+| Wiring | `worker.py`, `cli.py` | Builds a worker from settings; `slom serve / api / worker / run`. |
 
 **Execution paths.**
-- `sof serve`: the API and one worker in a single process. The simplest deployment.
-- `sof api` + `sof worker`: separate processes, as many workers as you like on one host, all
+- `slom serve`: the API and one worker in a single process. The simplest deployment.
+- `slom api` + `slom worker`: separate processes, as many workers as you like on one host, all
   sharing the journal.
-- `sof run "..."`: a one-shot run in the current process.
+- `slom run "..."`: a one-shot run in the current process.
 
 The journal is the only thing these paths share, so they behave identically.
 
@@ -56,7 +56,7 @@ sequenceDiagram
     participant A as API
     participant J as Journal (SQLite)
     participant W as Worker
-    participant M as slm-runtime
+    participant M as slim-serve
 
     C->>A: POST /v1/runs {question}
     A->>J: INSERT run (pending), idempotent on run_id
@@ -127,7 +127,7 @@ whose lease has expired can be claimed. Inputs and outputs are the dataclasses i
 serialized with pydantic. Changing their fields is a compatibility decision for in-flight runs.
 
 Nothing else is persisted. Metrics and logs are per process; the model server is stateless from
-SOF's point of view.
+SLOM's point of view.
 
 ## Failure boundaries
 
@@ -144,24 +144,24 @@ SOF's point of view.
 | A run that crashes every worker | the run | failed after `SOF_MAX_RUN_ATTEMPTS` claims |
 | Workflow code changed under an in-flight run | the run | `NonDeterminismError`; the run fails |
 | Journal unavailable | the process | API `/readyz` 503; workers' heartbeats fail and leases lapse |
-| Host failure | everything | journal on local disk: SOF is single-host by design |
+| Host failure | everything | journal on local disk: SLOM is single-host by design |
 
 ## External dependencies
 
-- An OpenAI-compatible `/v1/completions` server. It's built and tested against slm-runtime v0.1.0,
-  whose admission control, deadlines, cancellation and `/readyz` SOF relies on. Other servers
-  (`llama-server`, vLLM) speak the same API; the retry mapping is the same, and SOF treats a
+- An OpenAI-compatible `/v1/completions` server. It's built and tested against slim-serve v0.1.0,
+  whose admission control, deadlines, cancellation and `/readyz` SLOM relies on. Other servers
+  (`llama-server`, vLLM) speak the same API; the retry mapping is the same, and SLOM treats a
   missing `/readyz` (404) as ready.
 - Local disk for the SQLite file.
 
 ## Observability
 
-- **Metrics.** Prometheus: the worker on `SOF_METRICS_PORT`, the API on `/metrics` (with `sof serve`,
+- **Metrics.** Prometheus: the worker on `SOF_METRICS_PORT`, the API on `/metrics` (with `slom serve`,
   both in one registry). The catalogue is in the README.
 - **Logs.** Structured (`SOF_LOG_JSON=true` for one JSON object per line), with the same format as
-  slm-runtime. Run-scoped lines carry `run_id`; API access lines carry `request_id`.
+  slim-serve. Run-scoped lines carry `run_id`; API access lines carry `request_id`.
 - **Correlation.** Each model call's `X-Request-ID` is `run_id.seq.attempt`. It's stored in the
-  agent's result (`steps[].llm_request_id`) and logged by slm-runtime, so a slow or failed call in
+  agent's result (`steps[].llm_request_id`) and logged by slim-serve, so a slow or failed call in
   a run can be found in the server's logs directly.
 - **Live progress.** `GET /v1/runs/{id}` lists the steps journaled so far, with attempts and
   durations. That works mid-run because it reads the same table the workers write.

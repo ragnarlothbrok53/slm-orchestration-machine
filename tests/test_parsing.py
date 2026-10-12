@@ -2,7 +2,7 @@
 
 import pytest
 
-from sof.parsing import (
+from slom.parsing import (
     AnswerDecision,
     InvalidOutput,
     ToolDecision,

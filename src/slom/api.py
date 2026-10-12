@@ -1,7 +1,7 @@
 """HTTP API: submit, inspect and cancel agent runs.
 
 The API never executes runs; it writes them to the journal and reads them back. Workers may run
-in the same process (``sof serve``) or separately (``sof worker``, as many as you like on the
+in the same process (``slom serve``) or separately (``slom worker``, as many as you like on the
 same host). Either way the API's view of a run is exactly what is in the journal, including the
 steps finished so far.
 """
@@ -124,7 +124,7 @@ def _error(message: str, type_: str, status: int) -> JSONResponse:
 
 
 class RequestContextMiddleware:
-    """``X-Request-ID`` propagation and one access-log line per request (as in slm-runtime)."""
+    """``X-Request-ID`` propagation and one access-log line per request (as in slim-serve)."""
 
     def __init__(self, app: ASGIApp) -> None:
         self.app = app
@@ -170,7 +170,7 @@ def create_app(
     run_worker: WorkerFactory | None = None,
 ) -> FastAPI:
     """Build the API. ``run_worker``, if given, runs in the background for the app's lifetime
-    (``sof serve``); it receives the same store and metrics so ``/metrics`` covers both."""
+    (``slom serve``); it receives the same store and metrics so ``/metrics`` covers both."""
     settings = settings or Settings()
     metrics = metrics or Metrics()
     owns_store = store is None
@@ -205,7 +205,7 @@ def create_app(
             if owns_store:
                 await db.close()
 
-    app = FastAPI(title="sof", version=__version__, lifespan=lifespan)
+    app = FastAPI(title="slom", version=__version__, lifespan=lifespan)
     app.add_middleware(RequestContextMiddleware)
     app.state.store = db
 
@@ -233,7 +233,7 @@ def create_app(
 
     @app.get("/readyz")
     async def readyz() -> JSONResponse:
-        """Ready when the journal answers (and, with ``sof serve``, the embedded worker is
+        """Ready when the journal answers (and, with ``slom serve``, the embedded worker is
         alive). Model readiness is the workers' concern: they wait for it before claiming, so
         runs queue up as ``pending`` meanwhile."""
         if worker_task is not None and worker_task.done():

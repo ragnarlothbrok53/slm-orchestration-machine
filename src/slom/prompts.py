@@ -1,6 +1,6 @@
 """Prompt protocols: how tools, history and replies are laid out for the model.
 
-slm-runtime serves the raw completions API, so the client owns the chat template (ChatML here,
+slim-serve serves the raw completions API, so the client owns the chat template (ChatML here,
 as used by Qwen2.5 and many other small models). Two protocols are implemented, because which one
 a small model follows better is an empirical question (see ``benchmarks/eval_agent.py``):
 

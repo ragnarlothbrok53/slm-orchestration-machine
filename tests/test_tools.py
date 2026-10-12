@@ -5,7 +5,7 @@ import asyncio
 import pytest
 from pydantic import BaseModel
 
-from sof.tools import (
+from slom.tools import (
     ToolError,
     ToolRegistry,
     calculator,

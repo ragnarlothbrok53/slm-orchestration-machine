@@ -1,4 +1,4 @@
-# The full stack: slm-runtime (model server) + SOF API + SOF workers, sharing one journal volume.
+# The full stack: slim-serve (model server) + SLOM API + SLOM workers, sharing one journal volume.
 #
 #   mkdir -p models && curl -L -o models/qwen2.5-0.5b-instruct-q4_k_m.gguf \
 #     https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf
@@ -9,17 +9,17 @@
 # The journal is SQLite on a named volume: every container that mounts it must run on the same
 # host (Docker Desktop: the same VM). Don't put it on a network filesystem; see docs.
 
-x-sof: &sof
+x-slom: &slom
   build: .
-  image: sof:local
+  image: slom:local
   env_file:
     - path: .env
       required: false
   volumes:
-    - sof-data:/data
+    - slom-data:/data
 
 services:
-  slm-runtime:
+  slim-serve:
     # The inference server from https://github.com/ragnarlothbrok53/slm-inference-engine
     build: https://github.com/ragnarlothbrok53/slm-inference-engine.git#v0.1.0
     environment:
@@ -32,8 +32,8 @@ services:
       - "8000:8000"
 
   api:
-    <<: *sof
-    command: ["sof", "api"]
+    <<: *slom
+    command: ["slom", "api"]
     ports:
       - "8080:8080"
     healthcheck:
@@ -43,15 +43,15 @@ services:
       retries: 10
 
   worker:
-    <<: *sof
-    command: ["sof", "worker"]
+    <<: *slom
+    command: ["slom", "worker"]
     environment:
-      SOF_LLM_BASE_URL: http://slm-runtime:8000
-      # One LLM call in flight per worker; the default slm-runtime has one replica.
+      SOF_LLM_BASE_URL: http://slim-serve:8000
+      # One LLM call in flight per worker; the default slim-serve has one replica.
       SOF_LLM_CONCURRENCY: ${SLM_REPLICAS:-1}
     depends_on:
-      - slm-runtime  # workers wait for its /readyz themselves before claiming runs
+      - slim-serve  # workers wait for its /readyz themselves before claiming runs
     stop_grace_period: 15s  # > SOF_SHUTDOWN_GRACE_S, so runs are handed back, not killed
 
 volumes:
-  sof-data:
+  slom-data:

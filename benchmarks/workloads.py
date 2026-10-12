@@ -7,9 +7,9 @@ import os
 import time
 from dataclasses import dataclass, field
 
-from sof.contracts import LlmRequest, LlmResponse
-from sof.engine import RetryPolicy, RunContext, Workflow, step_info
-from sof.llm import LlmClient
+from slom.contracts import LlmRequest, LlmResponse
+from slom.engine import RetryPolicy, RunContext, Workflow, step_info
+from slom.llm import LlmClient
 
 
 @dataclass

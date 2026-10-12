@@ -8,11 +8,11 @@ import pytest
 from helpers import ScriptedLlm, make_worker, run_to_completion, sample_value
 from pydantic import TypeAdapter
 
-from sof.agent import WORKFLOW_NAME
-from sof.contracts import AgentInput, AgentResult
-from sof.engine import PermanentError, RetryableError
-from sof.metrics import Metrics
-from sof.store import Store
+from slom.agent import WORKFLOW_NAME
+from slom.contracts import AgentInput, AgentResult
+from slom.engine import PermanentError, RetryableError
+from slom.metrics import Metrics
+from slom.store import Store
 
 pytestmark = pytest.mark.anyio
 

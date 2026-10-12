@@ -1,6 +1,6 @@
-"""SOF against the real slm-runtime server (v0.1.0) over a real socket.
+"""SLOM against the real slim-serve server (v0.1.0) over a real socket.
 
-slm-runtime runs in-process with a scripted engine, so everything except the model is real: its
+slim-serve runs in-process with a scripted engine, so everything except the model is real: its
 scheduler, admission control, SSE framing, cancellation and metrics. These tests pin down the
 contract between the two services, not just each side's idea of it.
 """
@@ -17,14 +17,14 @@ import pytest
 from helpers import sample_value, wait_for
 from loguru import logger
 from pydantic import TypeAdapter
-from slm_server import ScriptedEngine, slm_runtime
+from slm_server import ScriptedEngine, slim_serve
 
-from sof.agent import WORKFLOW_NAME
-from sof.config import Settings
-from sof.contracts import AgentInput, AgentResult
-from sof.metrics import Metrics
-from sof.store import Store
-from sof.worker import agent_worker
+from slom.agent import WORKFLOW_NAME
+from slom.config import Settings
+from slom.contracts import AgentInput, AgentResult
+from slom.metrics import Metrics
+from slom.store import Store
+from slom.worker import agent_worker
 
 pytestmark = pytest.mark.anyio
 
@@ -35,7 +35,7 @@ async def submit(store: Store, run_id: str, **kw: object) -> None:
 
 
 def sof_settings(tmp_path: Path, base: str, **kw: object) -> Settings:
-    return Settings(db_path=str(tmp_path / "sof.db"), llm_base_url=base, poll_interval_s=0.01, **kw)  # type: ignore[arg-type]
+    return Settings(db_path=str(tmp_path / "slom.db"), llm_base_url=base, poll_interval_s=0.01, **kw)  # type: ignore[arg-type]
 
 
 async def test_agent_end_to_end_with_correlated_request_ids(tmp_path: Path) -> None:
@@ -46,7 +46,7 @@ async def test_agent_end_to_end_with_correlated_request_ids(tmp_path: Path) -> N
     )
     engine = ScriptedEngine()
     try:
-        with slm_runtime(engine) as base:
+        with slim_serve(engine) as base:
             settings = sof_settings(tmp_path, base)
             store = Store(settings.db_path)
             await submit(store, "e2e")
@@ -63,17 +63,17 @@ async def test_agent_end_to_end_with_correlated_request_ids(tmp_path: Path) -> N
     result = TypeAdapter(AgentResult).validate_json(run.output or "")
     assert (result.status, result.answer) == ("answered", "395")
     assert result.usage.prompt_tokens > 0 and result.usage.completion_tokens > 0
-    # Every model call in the journal can be found in slm-runtime's access log, and vice versa.
+    # Every model call in the journal can be found in slim-serve's access log, and vice versa.
     journal_ids = [s.llm_request_id for s in result.steps]
     assert journal_ids == ["e2e.1.1", "e2e.3.1"]
     assert server_request_ids == journal_ids
 
 
 async def test_overload_503s_are_absorbed_by_retries(tmp_path: Path) -> None:
-    """Server capacity: 1 replica, no queue. SOF oversubscribes it 4x on purpose."""
+    """Server capacity: 1 replica, no queue. SLOM oversubscribes it 4x on purpose."""
     engine = ScriptedEngine(token_latency_s=0.02)
     metrics = Metrics()
-    with slm_runtime(engine, replicas=1, max_queue_size=0) as base:
+    with slim_serve(engine, replicas=1, max_queue_size=0) as base:
         settings = sof_settings(tmp_path, base, llm_concurrency=4, max_concurrent_runs=4)
         store = Store(settings.db_path)
         for i in range(4):
@@ -98,7 +98,7 @@ async def test_overload_503s_are_absorbed_by_retries(tmp_path: Path) -> None:
 
 async def test_cancelling_a_run_stops_generation_on_the_server(tmp_path: Path) -> None:
     engine = ScriptedEngine(token_latency_s=0.01, max_text=" x")  # 1000 tokens = ~10s
-    with slm_runtime(engine) as base:
+    with slim_serve(engine) as base:
         settings = sof_settings(tmp_path, base, lease_s=0.3)
         store = Store(settings.db_path)
         await submit(store, "c1", max_tokens=1000)
@@ -111,7 +111,7 @@ async def test_cancelling_a_run_stops_generation_on_the_server(tmp_path: Path) -
             t_cancelled = time.monotonic()
             worker.stop()
             await task
-        # slm-runtime notices the closed stream and frees the replica.
+        # slim-serve notices the closed stream and frees the replica.
         while time.monotonic() - t_cancelled < 3:
             m = httpx.get(f"{base}/metrics").text
             if 'slm_requests_total{outcome="cancelled"} 1.0' in m:

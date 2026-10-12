@@ -16,11 +16,11 @@ from pathlib import Path
 import pytest
 from helpers import wait_for
 from pydantic import TypeAdapter
-from slm_server import ScriptedEngine, slm_runtime
+from slm_server import ScriptedEngine, slim_serve
 
-from sof.agent import WORKFLOW_NAME
-from sof.contracts import AgentInput, AgentResult
-from sof.store import Store
+from slom.agent import WORKFLOW_NAME
+from slom.contracts import AgentInput, AgentResult
+from slom.store import Store
 
 pytestmark = pytest.mark.anyio
 
@@ -38,14 +38,14 @@ def start_worker(db: Path, llm_url: str, log: Path) -> subprocess.Popen[bytes]:
     }
     out = log.open("wb")
     return subprocess.Popen(
-        [sys.executable, "-m", "sof", "worker"], env=env, stdout=out, stderr=subprocess.STDOUT
+        [sys.executable, "-m", "slom", "worker"], env=env, stdout=out, stderr=subprocess.STDOUT
     )
 
 
 async def test_killed_worker_is_replaced_without_repeating_finished_steps(tmp_path: Path) -> None:
-    db = tmp_path / "sof.db"
+    db = tmp_path / "slom.db"
     engine = ScriptedEngine(token_latency_s=0.3)  # the answer call takes ~0.6s: time to kill
-    with slm_runtime(engine) as base:
+    with slim_serve(engine) as base:
         store = Store(db)
         inp = AgentInput(question="17 pens at 23 each plus a 4 fee?")
         await store.submit("crash", WORKFLOW_NAME, TypeAdapter(AgentInput).dump_json(inp).decode())

@@ -1,5 +1,5 @@
 [project]
-name = "slm-orchestration-framework"
+name = "slom"
 version = "0.1.0"
 description = "Durable, tool-using agents for small language models, with a SQLite-journaled execution engine."
 readme = "README.md"
@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [project.scripts]
-sof = "sof.cli:app"
+slom = "slom.cli:app"
 
 [dependency-groups]
 dev = [
@@ -26,8 +26,8 @@ dev = [
     "ruff>=0.6",
     "mypy>=1.10",
     "psutil>=5.9",  # benchmarks: environment capture
-    # Contract/integration tests run SOF against the real inference server.
-    "slm-runtime @ git+https://github.com/ragnarlothbrok53/slm-inference-machine@v0.1.0",
+    # Contract/integration tests run SLOM against the real inference server.
+    "slim-serve @ git+https://github.com/ragnarlothbrok53/slm-inference-machine@v0.2.0",
 ]
 
 [build-system]
@@ -35,7 +35,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/sof"]
+packages = ["src/slom"]
 
 [tool.ruff]
 line-length = 100

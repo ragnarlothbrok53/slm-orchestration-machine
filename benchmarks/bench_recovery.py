@@ -28,7 +28,7 @@ from pathlib import Path
 from common import summarize, write_results
 from workloads import STEPS, StepsInput
 
-from sof.store import TERMINAL, Store
+from slom.store import TERMINAL, Store
 
 HERE = Path(__file__).parent
 

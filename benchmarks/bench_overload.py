@@ -1,12 +1,12 @@
-"""Backpressure against a real slm-runtime server: what ``SOF_LLM_CONCURRENCY`` should be.
+"""Backpressure against a real slim-serve server: what ``SOF_LLM_CONCURRENCY`` should be.
 
-slm-runtime (started here as a subprocess, ``fake`` engine with a fixed per-call cost) admits at
-most ``replicas + queue`` requests and answers ``503 + Retry-After`` beyond that. SOF submits a
+slim-serve (started here as a subprocess, ``fake`` engine with a fixed per-call cost) admits at
+most ``replicas + queue`` requests and answers ``503 + Retry-After`` beyond that. SLOM submits a
 burst of runs, each a chain of model calls, and caps its own in-flight calls at C:
 
 * C = replicas: nothing waits in the server's queue; no 503s expected.
 * C = replicas + queue: the queue is used; still no 503s expected.
-* C > replicas + queue: the server sheds load; SOF retries (backoff >= Retry-After = 1s).
+* C > replicas + queue: the server sheds load; SLOM retries (backoff >= Retry-After = 1s).
 
 Every configuration must complete every run; the question is what the excess costs.
 
@@ -30,11 +30,11 @@ import httpx
 from common import summarize, write_results
 from workloads import StepsInput, llm_chain
 
-from sof.engine import RetryPolicy, Worker
-from sof.llm import LlmClient
-from sof.logs import configure_logging
-from sof.metrics import Metrics
-from sof.store import TERMINAL, Store
+from slom.engine import RetryPolicy, Worker
+from slom.llm import LlmClient
+from slom.logs import configure_logging
+from slom.metrics import Metrics
+from slom.store import TERMINAL, Store
 
 
 def free_port() -> int:
@@ -58,7 +58,7 @@ def start_server(
     cmd = [
         sys.executable,
         "-c",
-        "from slm_runtime.cli import app; app()",
+        "from slim_serve.cli import app; app()",
         "serve",
         "--port",
         str(port),
@@ -73,7 +73,7 @@ def start_server(
             pass
         time.sleep(0.1)
     proc.kill()
-    raise RuntimeError("slm-runtime did not start")
+    raise RuntimeError("slim-serve did not start")
 
 
 def server_counter(metrics_text: str, name: str) -> float:

@@ -17,7 +17,7 @@ from collections import defaultdict
 from itertools import combinations
 from pathlib import Path
 
-from sof.tools import evaluate_arithmetic
+from slom.tools import evaluate_arithmetic
 
 TEMPLATES = [
     "price x qty + fee",

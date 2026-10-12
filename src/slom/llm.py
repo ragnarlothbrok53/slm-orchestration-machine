@@ -1,4 +1,4 @@
-"""Client for an OpenAI-compatible ``/v1/completions`` server, written against slm-runtime.
+"""Client for an OpenAI-compatible ``/v1/completions`` server, written against slim-serve.
 
 It translates the server's failure contract into retry decisions for the engine:
 
@@ -15,7 +15,7 @@ stream ends without ``finish_reason``     retry (truncated response)
 ========================================  =========================================
 
 It always streams, for two reasons: client-side TTFT is measurable, and cancelling a run closes
-the connection, which slm-runtime detects and uses to stop generating within about one token.
+the connection, which slim-serve detects and uses to stop generating within about one token.
 A non-streaming request would keep the model busy until ``max_tokens``.
 """
 
