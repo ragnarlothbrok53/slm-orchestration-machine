@@ -27,7 +27,7 @@ dev = [
     "mypy>=1.10",
     "psutil>=5.9",  # benchmarks: environment capture
     # Contract/integration tests run SOF against the real inference server.
-    "slm-runtime @ git+https://github.com/ragnarlothbrok53/slm-inference-engine@v0.1.0",
+    "slm-runtime @ git+https://github.com/ragnarlothbrok53/slm-inference-machine@v0.1.0",
 ]
 
 [build-system]
