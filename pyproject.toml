@@ -44,7 +44,7 @@ dev = [
     "mypy>=1.10",
     "psutil>=5.9",  # benchmarks: environment capture
     # Contract/integration tests run SLOM against the real inference server.
-    "slim-serve @ git+https://github.com/ragnarlothbrok53/slm-inference-machine@v0.2.0",
+    "slim-serve==0.1.0",
 ]
 
 [build-system]

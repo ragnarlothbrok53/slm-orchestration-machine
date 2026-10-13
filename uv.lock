@@ -700,7 +700,7 @@ wheels = [
 [[package]]
 name = "slim-serve"
 version = "0.1.0"
-source = { git = "https://github.com/ragnarlothbrok53/slm-inference-machine?rev=v0.2.0#158b8ffd9bf1164477366f88217cbcc92e92b3aa" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fastapi" },
     { name = "httpx" },
@@ -711,6 +711,10 @@ dependencies = [
     { name = "pydantic-settings" },
     { name = "typer" },
     { name = "uvicorn" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/73/fe/b4800baa7daa83dd714d01a58d4684f73f7189be51c170adaafb09f61bcb/slim_serve-0.1.0.tar.gz", hash = "sha256:cef985208ad01f44ade184ae6d3adc41a69aef2c9637b989fdbb4cef1ce239a8", size = 214220, upload-time = "2026-10-13T13:57:40.282Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1e/36/acd244b39baca1ff2ad7acf428b552fea2743109b1ea2d68bfa08b3ba8c5/slim_serve-0.1.0-py3-none-any.whl", hash = "sha256:6fa6e8041cefcdebde081c97eef9edfaf0b29e40d9ca8582bf738c5928c8b636", size = 30311, upload-time = "2026-10-13T13:57:41.86Z" },
 ]
 
 [[package]]
@@ -757,7 +761,7 @@ dev = [
     { name = "psutil", specifier = ">=5.9" },
     { name = "pytest", specifier = ">=8" },
     { name = "ruff", specifier = ">=0.6" },
-    { name = "slim-serve", git = "https://github.com/ragnarlothbrok53/slm-inference-machine?rev=v0.2.0" },
+    { name = "slim-serve", specifier = "==0.1.0" },
 ]
 
 [[package]]
