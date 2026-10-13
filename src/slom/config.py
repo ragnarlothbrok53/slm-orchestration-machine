@@ -1,4 +1,4 @@
-"""Configuration, loaded from environment variables (prefix ``SOF_``) or a ``.env`` file."""
+"""Configuration, loaded from environment variables (prefix ``SLOM_``) or a ``.env`` file."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="SOF_", env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_prefix="SLOM_", env_file=".env", extra="ignore")
 
     # --- durable state ---
     db_path: str = Field("slom.db", description="SQLite journal, shared by the API and workers.")

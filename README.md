@@ -107,7 +107,7 @@ flowchart LR
 - **External dependencies.** An LLM server. That's all.
 
 The sequence diagrams (a run, crash recovery), the thread model and the full failure table are in
-[docs/architecture.md](docs/architecture.md).
+[docs/architecture.md](https://github.com/ragnarlothbrok53/slm-orchestration-machine/blob/main/docs/architecture.md).
 
 ## Technical design
 
@@ -125,14 +125,14 @@ The sequence diagrams (a run, crash recovery), the thread model and the full fai
 | Two prompt protocols | Which format a 0.5B model follows best is an empirical question, so it's measured. |
 
 Each is argued with alternatives and limits in
-[docs/design-decisions.md](docs/design-decisions.md).
+[docs/design-decisions.md](https://github.com/ragnarlothbrok53/slm-orchestration-machine/blob/main/docs/design-decisions.md).
 
 ## Performance / Evaluation
 
-Everything below was **measured** with the scripts in [`benchmarks/`](benchmarks/), at the commit
+Everything below was **measured** with the scripts in [`benchmarks/`](https://github.com/ragnarlothbrok53/slm-orchestration-machine/blob/main/benchmarks/), at the commit
 recorded in each `summary.json`. Host: a Windows 11 laptop (Intel Core Ultra 7 165U, 14 logical
 CPUs, 32 GB, CPU only) running normal background software. Methodology and caveats are in
-[docs/benchmarking.md](docs/benchmarking.md).
+[docs/benchmarking.md](https://github.com/ragnarlothbrok53/slm-orchestration-machine/blob/main/docs/benchmarking.md).
 
 ### 1. The orchestration makes a 0.5B model succeed more often
 
@@ -142,31 +142,34 @@ Qwen2.5-0.5B-Instruct (Q4_K_M) on slim-serve, greedy decoding, 42 arithmetic wor
 
 | Mode | Correct | Held-out (39)¹ | Runs that answered | Model calls / run | p50 time / run |
 |---|---|---|---|---|---|
-| CoT baseline (1 call, no tools, "think step by step") | 16/42 (38%) | 16/39 | 42/42 | 1.0 | 5.7 s |
-| SLOM agent, generic JSON protocol | 20/42 (48%) | 19/39 | 42/42 | 3.24 | 5.8 s |
-| SLOM agent, Qwen-native protocol | **28/42 (67%)** | **26/39** | 42/42 | 2.0 | 5.0 s |
+| CoT baseline (1 call, no tools, "think step by step") | 16/42 (38%) | 16/39 | 42/42 | 1.0 | 6.8 s |
+| SLOM agent, generic JSON protocol | 20/42 (48%) | 19/39 | 42/42 | 3.24 | 6.1 s |
+| SLOM agent, Qwen-native protocol | **26/42 (62%)** | **24/39** | 42/42 | 2.0 | 5.1 s |
 
 ¹ Three problems were inspected while designing the repeat guard and forced answer.
 
-- **Significant:** agent-qwen vs the CoT baseline. On the same problems it fixed 15 and broke 3;
-  exact McNemar test p = 0.008. agent-qwen vs agent-json: 8 fixed, 0 broken, p = 0.008.
-- **Not significant:** agent-json vs CoT (8 fixed vs 4 broken, p = 0.39). I'm not claiming the
-  JSON protocol beats the baseline.
+- **Significant:** agent-qwen vs the CoT baseline. On the same problems it fixed 14 and broke 4;
+  exact McNemar test p = 0.031.
+- **Not significant:** agent-qwen vs agent-json (7 fixed vs 1 broken, p = 0.07) and agent-json
+  vs CoT (8 fixed vs 4 broken, p = 0.39). I'm not claiming either protocol difference is real
+  beyond this sample.
 - **What the orchestration fixed:** all 84 agent runs ended with an answer. None crashed, failed
   to parse or ran out of steps. Before the forced answer was added, the JSON protocol ended all 3
   development problems with no answer at all, re-issuing the same tool call until its repair
   budget ran out.
-- **What it can't fix:** every one of the 36 wrong agent answers comes from a wrong formula. No
-  tool call in those runs computed the right value. Both agents scored 0/7 on two templates: they
+- **What it can't fix:** 37 of the 38 wrong agent answers come from a wrong formula: no tool call
+  in those runs computed the right value. Both agents scored 0/7 on two templates: they
   subtract the delivery fee in "price × qty + fee", and drop the multiplication in
-  "boxes × size − sold". In 23 of the 36 the answer is exactly what the model's own expression
-  computes; in the other 13 the model also mis-reported the tool's result (e.g. dropped a minus
-  sign).
-- **Protocol matters:** the format the model was trained on beat a generic one by 8 problems,
-  in fewer calls. That's measured on one model; it's the default worth testing, not a law.
+  "boxes × size − sold". In 24 of the 38 the answer is exactly what the model's own expression
+  computes; in most of the rest the model also mis-reported the tool's result (e.g. dropped a
+  minus sign). The 38th is a grading artifact: the answer states the right number, then ends on
+  another one (the grader takes the last number).
+- **Protocol:** the format the model was trained on scored 6 problems more than a generic one, in
+  fewer calls, but at this sample size that isn't significant. It's the default worth testing,
+  not a law.
 
 Raw rows, transcripts and the analysis are in
-[`benchmarks/results/eval-agent/`](benchmarks/results/eval-agent/) (`analyze_eval.py` reproduces
+[`benchmarks/results/eval-agent/`](https://github.com/ragnarlothbrok53/slm-orchestration-machine/blob/main/benchmarks/results/eval-agent/) (`analyze_eval.py` reproduces
 the tests from `rows.csv`).
 
 ### 2. Crash recovery: no lost steps, recovery time set by the lease
@@ -201,14 +204,14 @@ submitted at once; ideal makespan 12.0 s. Two interleaved repetitions:
 - The first version of the retry policy had no jitter. Clients rejected together retried
   together, and the batch ran 4–6× slower still. That's why `RetryPolicy` jitters and treats
   `Retry-After` as a floor. The pre-fix result is kept in
-  [`results/overload-nojitter/`](benchmarks/results/overload-nojitter/).
+  [`results/overload-nojitter/`](https://github.com/ragnarlothbrok53/slm-orchestration-machine/blob/main/benchmarks/results/overload-nojitter/).
 
 ### 4. What durability costs
 
 No model; no-op steps, so this is engine plus journal only. Ranges are over three separate
 invocations:
 
-| | `SOF_DB_SYNCHRONOUS=FULL` (default) | `NORMAL` |
+| | `SLOM_DB_SYNCHRONOUS=FULL` (default) | `NORMAL` |
 |---|---|---|
 | Journaled step, p50 / p95 | 3.0–3.8 ms / 4.2–4.7 ms | 0.52–0.69 ms / 0.86–1.05 ms |
 | Replayed step (recovery), p50 | 0.014–0.034 ms | 0.022–0.025 ms |
@@ -232,8 +235,8 @@ journal adds well under 1% to a model-bound step.
 | Model still loading | workers don't claim runs until `/readyz` is 200; runs wait as `pending` | `wait_for_llm` |
 | Worker killed | its runs resume on another worker after the lease (default 15 s) | lease expiry + journal replay |
 | Worker stalled past its lease | its writes are rejected; it abandons the run | fencing token |
-| Run crashes every worker | failed after `SOF_MAX_RUN_ATTEMPTS` (5) claims | `attempts` counter |
-| `SIGTERM` | stop claiming; in-flight runs get `SOF_SHUTDOWN_GRACE_S`, then are handed back (not failed) | `Worker._drain` + `Store.release` |
+| Run crashes every worker | failed after `SLOM_MAX_RUN_ATTEMPTS` (5) claims | `attempts` counter |
+| `SIGTERM` | stop claiming; in-flight runs get `SLOM_SHUTDOWN_GRACE_S`, then are handed back (not failed) | `Worker._drain` + `Store.release` |
 | Cancel | pending: immediate. Running: within `lease_s/3`; the HTTP stream closes, so slim-serve stops generating | heartbeat reads the cancel flag |
 | Duplicate submit | same `run_id` + same input returns the same run; different input returns `409` | `Store.submit` |
 | Embedded worker dies (`slom serve`) | logged; `/readyz` turns `503` | done-callback |
@@ -244,20 +247,20 @@ journal adds well under 1% to a model-bound step.
 
 | Metric | Answers |
 |---|---|
-| `sof_runs{status}` | How many runs are pending / running / done? (sampled from the journal) |
-| `sof_runs_active`, `sof_run_claims_total{kind=new\|resumed}` | Is this worker busy? How often are runs recovered from another worker? |
-| `sof_runs_finished_total{outcome}`, `sof_run_duration_seconds` | Outcomes; submit-to-done latency including queueing and recovery |
-| `sof_steps_total{step,outcome}`, `sof_step_duration_seconds{step}` | Which step is slow or failing? (live executions only) |
-| `sof_step_retries_total{step,error}` | Where are retries going, and why? |
-| `sof_steps_replayed_total{step}` | Recovery at work: steps answered from the journal |
-| `sof_leases_lost_total` | Workers stalling past their lease |
-| `sof_llm_ttft_seconds`, `sof_llm_tokens_total{kind}`, `sof_llm_errors_total{cause}` | Model latency as SLOM sees it; overload vs timeouts vs bad requests |
-| `sof_agent_runs_total{status}`, `sof_agent_invalid_outputs_total`, `sof_tool_calls_total{tool,ok}` | Is the model following the protocol? Are tools succeeding? |
+| `slom_runs{status}` | How many runs are pending / running / done? (sampled from the journal) |
+| `slom_runs_active`, `slom_run_claims_total{kind=new\|resumed}` | Is this worker busy? How often are runs recovered from another worker? |
+| `slom_runs_finished_total{outcome}`, `slom_run_duration_seconds` | Outcomes; submit-to-done latency including queueing and recovery |
+| `slom_steps_total{step,outcome}`, `slom_step_duration_seconds{step}` | Which step is slow or failing? (live executions only) |
+| `slom_step_retries_total{step,error}` | Where are retries going, and why? |
+| `slom_steps_replayed_total{step}` | Recovery at work: steps answered from the journal |
+| `slom_leases_lost_total` | Workers stalling past their lease |
+| `slom_llm_ttft_seconds`, `slom_llm_tokens_total{kind}`, `slom_llm_errors_total{cause}` | Model latency as SLOM sees it; overload vs timeouts vs bad requests |
+| `slom_agent_runs_total{status}`, `slom_agent_invalid_outputs_total`, `slom_tool_calls_total{tool,ok}` | Is the model following the protocol? Are tools succeeding? |
 
 Replayed steps never touch the latency, token or error metrics, so a recovery doesn't look like
 a burst of very fast model calls.
 
-**Logs.** Structured, in the same format as slim-serve (`SOF_LOG_JSON=true` for JSON lines).
+**Logs.** Structured, in the same format as slim-serve (`SLOM_LOG_JSON=true` for JSON lines).
 Run-scoped lines carry `run_id`.
 
 **Correlation.** Every model call carries `X-Request-ID: <run_id>.<step>.<attempt>`. It's stored
@@ -269,33 +272,34 @@ durations, while the run is still going.
 
 ## Quick start
 
-Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/), plus a running slim-serve.
+Requires Python 3.11+, plus a running slim-serve (or another OpenAI-compatible
+`/v1/completions` server).
 
 ```bash
-# 1. The model server (separate repo)
-git clone https://github.com/ragnarlothbrok53/slm-inference-engine.git
-cd slm-inference-engine && uv sync --extra llama
-mkdir -p models && curl -L -o models/qwen2.5-0.5b-instruct-q4_k_m.gguf \
-  https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf
-uv run slim-serve serve                     # :8000
+# 1. The model server (https://github.com/ragnarlothbrok53/slm-inference-machine)
+pip install "slim-serve[llama]" --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
+mkdir -p models && curl -L -o models/qwen2.5-0.5b-instruct-q4_k_m.gguf   https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf
+slim-serve serve                            # :8000
 
 # 2. SLOM
-git clone https://github.com/ragnarlothbrok53/slom.git && cd slom
-uv sync
-uv run slom run "A shop sells pens at 17 rupees each. Priya buys 23 pens and pays a 4 rupee delivery fee. How much does she pay?" --protocol qwen
+pip install slom
+slom run "A shop sells pens at 17 rupees each. Priya buys 23 pens and pays a 4 rupee delivery fee. How much does she pay?" --protocol qwen
 ```
+
+From source: `git clone https://github.com/ragnarlothbrok53/slm-orchestration-machine.git`, then
+`uv sync` and prefix the commands with `uv run`.
 
 Real output of that command (Qwen2.5-0.5B on a laptop CPU):
 
 ```
 model> <tool_call>
-{{"name": "calculator", "arguments": {"expression": "23 * 17 - 4"}}
+{"name": "calculator", "arguments": {"expression": "23 * 17 - 4"}}
 </tool_call>
 tool> 387
 model> Priya pays 387 rupees for the pens.
 
 answered: Priya pays 387 rupees for the pens.
-[2 LLM calls, 1 tool calls, 706+40 tokens, 1.8s in the model]
+[2 LLM calls, 1 tool calls, 701+39 tokens, 1.8s in the model]
 ```
 
 The orchestration did its job: one well-formed tool call, the result, a clean answer, in 2 calls.
@@ -341,16 +345,19 @@ from slom import BUILTIN_TOOLS, ToolError, idempotency_key, tool
 from slom.config import Settings
 from slom.worker import serve_worker
 
+
 class RefundArgs(BaseModel):
     order_id: str = Field(description="e.g. A-1001")
     amount: float
 
+
 @tool(description="Refund an order. Returns the refund ID.")
 async def refund(args: RefundArgs) -> str:
     if args.amount <= 0:
-        raise ToolError("amount must be positive")       # the model sees this and can retry
+        raise ToolError("amount must be positive")  # the model sees this and can retry
     # `payments` is your client; the key is stable across retries and crash recovery.
     return await payments.refund(args.order_id, args.amount, idempotency_key=idempotency_key())
+
 
 asyncio.run(serve_worker(Settings(), tools=[*BUILTIN_TOOLS, refund]))
 ```
@@ -360,36 +367,38 @@ asyncio.run(serve_worker(Settings(), tools=[*BUILTIN_TOOLS, refund]))
 ```python
 from slom import RunContext, Store, Worker, Workflow
 
+
 async def pipeline(ctx: RunContext, doc_id: str) -> str:
     text = await ctx.step("fetch", fetch_document, doc_id)
-    summary = await ctx.step("summarize", summarize, text)   # not repaid after a crash
+    summary = await ctx.step("summarize", summarize, text)  # not repaid after a crash
     return await ctx.step("store", save_summary, summary)
+
 
 worker = Worker(Store("slom.db"), [Workflow.define("pipeline", pipeline)])
 ```
 
 ## Configuration
 
-Environment variables (prefix `SOF_`), a `.env` file (see [`.env.example`](.env.example)), or CLI
+Environment variables (prefix `SLOM_`), a `.env` file (see [`.env.example`](https://github.com/ragnarlothbrok53/slm-orchestration-machine/blob/main/.env.example)), or CLI
 flags (`--db`, `--llm-url`, `--host`, `--port`), which take precedence. Full definitions, types
-and bounds are in [`config.py`](src/slom/config.py).
+and bounds are in [`config.py`](https://github.com/ragnarlothbrok53/slm-orchestration-machine/blob/main/src/slom/config.py).
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `SOF_DB_PATH` | `slom.db` | The SQLite journal, shared by the API and workers on this host |
-| `SOF_DB_SYNCHRONOUS` | `FULL` | `FULL`: finished steps survive power loss. `NORMAL`: survive crashes only; cheaper commits |
-| `SOF_LLM_BASE_URL` | `http://127.0.0.1:8000` | slim-serve or another OpenAI-compatible server |
-| `SOF_LLM_CONCURRENCY` | `1` | Model calls in flight per worker. Set to slim-serve's `SLM_REPLICAS`; never above replicas + queue |
-| `SOF_LLM_TIMEOUT_S` | `130` | Per attempt; keep it above slim-serve's 120 s deadline |
-| `SOF_LLM_MAX_ATTEMPTS` | `8` | Per model call; about 45–90 s of tolerated outage |
-| `SOF_MAX_CONCURRENT_RUNS` | `8` | Runs one worker executes at once |
-| `SOF_LEASE_S` | `15` | Recovery time after a crash vs heartbeat write rate |
-| `SOF_MAX_RUN_ATTEMPTS` | `5` | Claims before a run is declared poison |
-| `SOF_SHUTDOWN_GRACE_S` | `10` | Time in-flight runs get on SIGTERM before being handed back |
-| `SOF_POLL_INTERVAL_S` | `0.2` | Idle claim polling |
-| `SOF_API_HOST`, `SOF_API_PORT` | `127.0.0.1`, `8080` | API bind address |
-| `SOF_METRICS_PORT` | `9464` | Worker Prometheus port (0 disables) |
-| `SOF_LOG_LEVEL`, `SOF_LOG_JSON` | `INFO`, `false` | Logging |
+| `SLOM_DB_PATH` | `slom.db` | The SQLite journal, shared by the API and workers on this host |
+| `SLOM_DB_SYNCHRONOUS` | `FULL` | `FULL`: finished steps survive power loss. `NORMAL`: survive crashes only; cheaper commits |
+| `SLOM_LLM_BASE_URL` | `http://127.0.0.1:8000` | slim-serve or another OpenAI-compatible server |
+| `SLOM_LLM_CONCURRENCY` | `1` | Model calls in flight per worker. Set to slim-serve's `SLM_REPLICAS`; never above replicas + queue |
+| `SLOM_LLM_TIMEOUT_S` | `130` | Per attempt; keep it above slim-serve's 120 s deadline |
+| `SLOM_LLM_MAX_ATTEMPTS` | `8` | Per model call; about 45–90 s of tolerated outage |
+| `SLOM_MAX_CONCURRENT_RUNS` | `8` | Runs one worker executes at once |
+| `SLOM_LEASE_S` | `15` | Recovery time after a crash vs heartbeat write rate |
+| `SLOM_MAX_RUN_ATTEMPTS` | `5` | Claims before a run is declared poison |
+| `SLOM_SHUTDOWN_GRACE_S` | `10` | Time in-flight runs get on SIGTERM before being handed back |
+| `SLOM_POLL_INTERVAL_S` | `0.2` | Idle claim polling |
+| `SLOM_API_HOST`, `SLOM_API_PORT` | `127.0.0.1`, `8080` | API bind address |
+| `SLOM_METRICS_PORT` | `9464` | Worker Prometheus port (0 disables) |
+| `SLOM_LOG_LEVEL`, `SLOM_LOG_JSON` | `INFO`, `false` | Logging |
 
 ## Testing
 
@@ -399,7 +408,7 @@ uv run pytest                # 124 tests, ~30 s
 uv run ruff check . && uv run ruff format --check . && uv run mypy
 ```
 
-What the tests pin down ([`tests/`](tests/)):
+What the tests pin down ([`tests/`](https://github.com/ragnarlothbrok53/slm-orchestration-machine/blob/main/tests/)):
 
 - **Engine** (`test_engine.py`, `test_store.py`):
   - finished steps aren't re-executed on resume;
@@ -440,7 +449,7 @@ What the tests pin down ([`tests/`](tests/)):
 - removing the repeat guard;
 - a non-streaming client.
 
-CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs lint, format, strict mypy and all
+CI ([`.github/workflows/ci.yml`](https://github.com/ragnarlothbrok53/slm-orchestration-machine/blob/main/.github/workflows/ci.yml)) runs lint, format, strict mypy and all
 tests, and brings up the compose stack (slim-serve with the fake engine) to push a run through
 API → journal → worker → slim-serve and back.
 
@@ -454,7 +463,7 @@ uv run python benchmarks/eval_agent.py --llm-url http://127.0.0.1:8000   # real 
 ```
 
 Each writes `benchmarks/results/<name>/summary.json` (environment, commit, config, summary) and
-`rows.csv` (raw rows). Details and caveats are in [docs/benchmarking.md](docs/benchmarking.md).
+`rows.csv` (raw rows). Details and caveats are in [docs/benchmarking.md](https://github.com/ragnarlothbrok53/slm-orchestration-machine/blob/main/docs/benchmarking.md).
 
 ## Design tradeoffs
 
@@ -525,4 +534,4 @@ docs/         architecture.md · design-decisions.md · benchmarking.md
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT, see [LICENSE](https://github.com/ragnarlothbrok53/slm-orchestration-machine/blob/main/LICENSE).

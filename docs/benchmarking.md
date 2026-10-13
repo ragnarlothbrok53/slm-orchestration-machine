@@ -27,7 +27,7 @@ machines. Compare the *ratios* within a benchmark, which were stable.
 - *Throughput:* 60 runs × 20 steps, with up to 1, 8 or 32 runs in flight in one worker, repeated
   3 times. Reported as steps per second.
 
-Both `SOF_DB_SYNCHRONOUS` modes are measured.
+Both `SLOM_DB_SYNCHRONOUS` modes are measured.
 
 **Caveat.** Sub-millisecond timings on this host vary between sessions: an earlier session
 (before benchmark logging was turned down to WARNING) measured `NORMAL` at 0.24–0.86 ms p50.
@@ -165,20 +165,20 @@ expected integer.
 transcripts of failing runs on three problems (`arith-00`–`arith-02`). Accuracy is reported both
 on all 42 and on the 39 held-out problems.
 
-**Results** (source identical to commit `813bcd5`; see the note in `summary.json`):
+**Results** (commit `4cb8401`, recorded in `summary.json`):
 
 | Mode | Correct (42) | Held-out (39) | Answered | Calls / run | p50 / p95 time per run |
 |---|---|---|---|---|---|
-| `cot` | 16 (38%) | 16 | 42 | 1.0 | 5.7 / 12.6 s |
-| `agent-json` | 20 (48%) | 19 | 42 | 3.24 | 5.8 / 11.5 s |
-| `agent-qwen` | 28 (67%) | 26 | 42 | 2.0 | 5.0 / 7.7 s |
+| `cot` | 16 (38%) | 16 | 42 | 1.0 | 6.8 / 15.9 s |
+| `agent-json` | 20 (48%) | 19 | 42 | 3.24 | 6.1 / 11.5 s |
+| `agent-qwen` | 26 (62%) | 24 | 42 | 2.0 | 5.1 / 9.6 s |
 
 **Paired comparisons** (same problems, exact McNemar; `analyze_eval.py`):
 
 | | only first right | only second right | p |
 |---|---|---|---|
-| cot vs agent-qwen | 3 | 15 | 0.008 |
-| agent-json vs agent-qwen | 0 | 8 | 0.008 |
+| cot vs agent-qwen | 4 | 14 | 0.031 |
+| agent-json vs agent-qwen | 1 | 7 | 0.070 |
 | cot vs agent-json | 4 | 8 | 0.39 |
 
 **By template** (7 problems each):
@@ -187,21 +187,28 @@ on all 42 and on the 39 held-out problems.
 |---|---|---|---|
 | price × qty + fee | 2 | 0 | 0 |
 | give away, buy bags | 1 | 0 | 7 |
-| two-leg distance | 3 | 6 | 7 |
+| two-leg distance | 3 | 6 | 6 |
 | boxes × size − sold | 1 | 0 | 0 |
 | percent discount | 7 | 7 | 7 |
-| weekly savings − gift | 2 | 7 | 7 |
+| weekly savings − gift | 2 | 7 | 6 |
 
 **Where the agents fail.**
-- In all 36 wrong agent answers, no calculator call computed the expected value: the model wrote a
-  wrong formula.
-- In 23 of the 36, the final answer equals the value of the model's own expression. In the other
-  13, it also mis-reported the tool result, e.g. answering 627 when the calculator returned −627.
+- In 37 of the 38 wrong agent answers, no calculator call computed the expected value: the model
+  wrote a wrong formula.
+- In 24 of the 38, the final answer equals the value of the model's own expression. In most of the
+  others, it also mis-reported the tool result, e.g. answering 627 when the calculator returned
+  −627.
+- The remaining one (`arith-41`, agent-qwen) is a grading artifact: "Kabir has 232 rupees left …
+  spending 68 rupees on a gift" states the right answer but ends on 68. It is counted as wrong, as
+  the grading rule says.
+- An earlier run (commit `813bcd5`) had a bug in the Qwen system prompt: the tool-call example
+  showed doubled braces (`{{"name": ...}}`). With it, agent-qwen scored 28/42. CoT and agent-json,
+  which don't use that prompt, gave identical results in both runs.
 - On "price × qty + fee", both agents wrote `price * qty - fee` on all 7 problems.
 - Using a tool doesn't help on what the model already does reliably (percent discount: 7/7 in
   every mode).
 - It helps most where CoT arithmetic breaks down: multi-digit products, as in "weekly savings":
-  2/7 for CoT against 7/7 with a tool.
+  2/7 for CoT against 6–7/7 with a tool.
 
 ## Reproducing
 

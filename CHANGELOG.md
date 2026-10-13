@@ -3,10 +3,11 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/).
 
-## [0.1.0] - 2026-10-09
+## [0.1.0] - 2026-10-13
 
-First tagged release. It replaces the initial prototype: a FastAPI endpoint that started a
-Temporal workflow which echoed its input, with no model, tools or tests.
+First release, published to PyPI as `slom` (the project was previously named SOF). It replaces
+the initial prototype: a FastAPI endpoint that started a Temporal workflow which echoed its
+input, with no model, tools or tests.
 
 ### Added
 - Durable execution engine (`engine.py`, `store.py`): journaled steps in SQLite (WAL,

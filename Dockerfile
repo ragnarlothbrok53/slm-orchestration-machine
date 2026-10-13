@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1
-# One image for every role: `sof serve` (default), `sof api`, `sof worker`.
+# One image for every role: `slom serve` (default), `slom api`, `slom worker`.
 # The SQLite journal lives in /data; share that volume between the API and the workers.
 #
-#   docker build -t sof .
-#   docker run --rm -p 8080:8080 -v sof-data:/data -e SOF_LLM_BASE_URL=http://host:8000 sof
+#   docker build -t slom .
+#   docker run --rm -p 8080:8080 -v slom-data:/data -e SLOM_LLM_BASE_URL=http://host:8000 slom
 
 FROM python:3.13-slim AS builder
 COPY --from=ghcr.io/astral-sh/uv:0.8 /uv /bin/uv
@@ -22,12 +22,12 @@ RUN useradd --create-home --uid 10001 app && mkdir /data && chown app /data
 COPY --from=builder /app/.venv /app/.venv
 ENV PATH=/app/.venv/bin:$PATH \
     PYTHONUNBUFFERED=1 \
-    SOF_DB_PATH=/data/sof.db \
-    SOF_API_HOST=0.0.0.0 \
-    SOF_LOG_JSON=true
+    SLOM_DB_PATH=/data/slom.db \
+    SLOM_API_HOST=0.0.0.0 \
+    SLOM_LOG_JSON=true
 USER app
 WORKDIR /home/app
 VOLUME /data
-# 8080: API (also serves /metrics). 9464: Prometheus endpoint of `sof worker`.
+# 8080: API (also serves /metrics). 9464: Prometheus endpoint of `slom worker`.
 EXPOSE 8080 9464
-CMD ["sof", "serve"]
+CMD ["slom", "serve"]

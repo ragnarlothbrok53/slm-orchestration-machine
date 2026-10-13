@@ -176,7 +176,7 @@ def create_app(
     owns_store = store is None
     db = store or Store(settings.db_path, synchronous=settings.db_synchronous)
     runs_by_status = Gauge(
-        "sof_runs",
+        "slom_runs",
         "Runs in the journal by status (sampled at scrape)",
         ["status"],
         registry=metrics.registry,

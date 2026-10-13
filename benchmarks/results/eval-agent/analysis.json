@@ -6,14 +6,14 @@
       "p_exact": 0.3877
     },
     "cot vs agent-qwen": {
-      "only_first_correct": 3,
-      "only_second_correct": 15,
-      "p_exact": 0.0075
+      "only_first_correct": 4,
+      "only_second_correct": 14,
+      "p_exact": 0.0309
     },
     "agent-json vs agent-qwen": {
-      "only_first_correct": 0,
-      "only_second_correct": 8,
-      "p_exact": 0.0078
+      "only_first_correct": 1,
+      "only_second_correct": 7,
+      "p_exact": 0.0703
     }
   },
   "per_template": {
@@ -30,7 +30,7 @@
     "two-leg distance": {
       "cot": 3,
       "agent-json": 6,
-      "agent-qwen": 7
+      "agent-qwen": 6
     },
     "boxes - sold": {
       "cot": 1,
@@ -45,7 +45,7 @@
     "weekly savings - gift": {
       "cot": 2,
       "agent-json": 7,
-      "agent-qwen": 7
+      "agent-qwen": 6
     }
   },
   "agent-json_errors": {
@@ -54,8 +54,8 @@
     "answer_equals_its_own_expression": 16
   },
   "agent-qwen_errors": {
-    "wrong": 14,
-    "a_tool_call_computed_the_right_value": 0,
-    "answer_equals_its_own_expression": 7
+    "wrong": 16,
+    "a_tool_call_computed_the_right_value": 1,
+    "answer_equals_its_own_expression": 8
   }
 }

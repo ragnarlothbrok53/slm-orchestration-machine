@@ -121,7 +121,7 @@ class StepInfo:
         return f"{self.run_id}.{self.seq}"
 
 
-_current_step: ContextVar[StepInfo] = ContextVar("sof_current_step")
+_current_step: ContextVar[StepInfo] = ContextVar("slom_current_step")
 
 
 def step_info() -> StepInfo:

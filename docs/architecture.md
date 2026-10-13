@@ -102,7 +102,7 @@ sequenceDiagram
 ## Concurrency model
 
 - **Worker process.** One asyncio event loop runs the claim loop and up to
-  `SOF_MAX_CONCURRENT_RUNS` run tasks. Each run task has a sibling heartbeat task. Model calls are
+  `SLOM_MAX_CONCURRENT_RUNS` run tasks. Each run task has a sibling heartbeat task. Model calls are
   async HTTP, and sync tools run in `asyncio.to_thread`, so nothing blocks the loop.
 - **Journal access.** Each `Store` owns one SQLite connection on one dedicated thread; every call
   is a short transaction executed there. Across processes, SQLite's file lock serializes writers.
@@ -141,7 +141,7 @@ SLOM's point of view.
 | LLM rejects the request (4xx) | the run | fails at once; the error is in the run |
 | Worker crash / kill | that worker's runs | resumed by another worker after the lease expires |
 | Worker stalls past its lease (zombie) | that worker | its writes are fenced and it abandons the run |
-| A run that crashes every worker | the run | failed after `SOF_MAX_RUN_ATTEMPTS` claims |
+| A run that crashes every worker | the run | failed after `SLOM_MAX_RUN_ATTEMPTS` claims |
 | Workflow code changed under an in-flight run | the run | `NonDeterminismError`; the run fails |
 | Journal unavailable | the process | API `/readyz` 503; workers' heartbeats fail and leases lapse |
 | Host failure | everything | journal on local disk: SLOM is single-host by design |
@@ -156,9 +156,9 @@ SLOM's point of view.
 
 ## Observability
 
-- **Metrics.** Prometheus: the worker on `SOF_METRICS_PORT`, the API on `/metrics` (with `slom serve`,
+- **Metrics.** Prometheus: the worker on `SLOM_METRICS_PORT`, the API on `/metrics` (with `slom serve`,
   both in one registry). The catalogue is in the README.
-- **Logs.** Structured (`SOF_LOG_JSON=true` for one JSON object per line), with the same format as
+- **Logs.** Structured (`SLOM_LOG_JSON=true` for one JSON object per line), with the same format as
   slim-serve. Run-scoped lines carry `run_id`; API access lines carry `request_id`.
 - **Correlation.** Each model call's `X-Request-ID` is `run_id.seq.attempt`. It's stored in the
   agent's result (`steps[].llm_request_id`) and logged by slim-serve, so a slow or failed call in
