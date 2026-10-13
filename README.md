@@ -107,7 +107,7 @@ flowchart LR
 - **External dependencies.** An LLM server. That's all.
 
 The sequence diagrams (a run, crash recovery), the thread model and the full failure table are in
-[docs/architecture.md](docs/architecture.md).
+[docs/architecture.md](https://github.com/ragnarlothbrok53/slm-orchestration-machine/blob/main/docs/architecture.md).
 
 ## Technical design
 
@@ -125,14 +125,14 @@ The sequence diagrams (a run, crash recovery), the thread model and the full fai
 | Two prompt protocols | Which format a 0.5B model follows best is an empirical question, so it's measured. |
 
 Each is argued with alternatives and limits in
-[docs/design-decisions.md](docs/design-decisions.md).
+[docs/design-decisions.md](https://github.com/ragnarlothbrok53/slm-orchestration-machine/blob/main/docs/design-decisions.md).
 
 ## Performance / Evaluation
 
-Everything below was **measured** with the scripts in [`benchmarks/`](benchmarks/), at the commit
+Everything below was **measured** with the scripts in [`benchmarks/`](https://github.com/ragnarlothbrok53/slm-orchestration-machine/blob/main/benchmarks/), at the commit
 recorded in each `summary.json`. Host: a Windows 11 laptop (Intel Core Ultra 7 165U, 14 logical
 CPUs, 32 GB, CPU only) running normal background software. Methodology and caveats are in
-[docs/benchmarking.md](docs/benchmarking.md).
+[docs/benchmarking.md](https://github.com/ragnarlothbrok53/slm-orchestration-machine/blob/main/docs/benchmarking.md).
 
 ### 1. The orchestration makes a 0.5B model succeed more often
 
@@ -142,31 +142,34 @@ Qwen2.5-0.5B-Instruct (Q4_K_M) on slim-serve, greedy decoding, 42 arithmetic wor
 
 | Mode | Correct | Held-out (39)¹ | Runs that answered | Model calls / run | p50 time / run |
 |---|---|---|---|---|---|
-| CoT baseline (1 call, no tools, "think step by step") | 16/42 (38%) | 16/39 | 42/42 | 1.0 | 5.7 s |
-| SLOM agent, generic JSON protocol | 20/42 (48%) | 19/39 | 42/42 | 3.24 | 5.8 s |
-| SLOM agent, Qwen-native protocol | **28/42 (67%)** | **26/39** | 42/42 | 2.0 | 5.0 s |
+| CoT baseline (1 call, no tools, "think step by step") | 16/42 (38%) | 16/39 | 42/42 | 1.0 | 6.8 s |
+| SLOM agent, generic JSON protocol | 20/42 (48%) | 19/39 | 42/42 | 3.24 | 6.1 s |
+| SLOM agent, Qwen-native protocol | **26/42 (62%)** | **24/39** | 42/42 | 2.0 | 5.1 s |
 
 ¹ Three problems were inspected while designing the repeat guard and forced answer.
 
-- **Significant:** agent-qwen vs the CoT baseline. On the same problems it fixed 15 and broke 3;
-  exact McNemar test p = 0.008. agent-qwen vs agent-json: 8 fixed, 0 broken, p = 0.008.
-- **Not significant:** agent-json vs CoT (8 fixed vs 4 broken, p = 0.39). I'm not claiming the
-  JSON protocol beats the baseline.
+- **Significant:** agent-qwen vs the CoT baseline. On the same problems it fixed 14 and broke 4;
+  exact McNemar test p = 0.031.
+- **Not significant:** agent-qwen vs agent-json (7 fixed vs 1 broken, p = 0.07) and agent-json
+  vs CoT (8 fixed vs 4 broken, p = 0.39). I'm not claiming either protocol difference is real
+  beyond this sample.
 - **What the orchestration fixed:** all 84 agent runs ended with an answer. None crashed, failed
   to parse or ran out of steps. Before the forced answer was added, the JSON protocol ended all 3
   development problems with no answer at all, re-issuing the same tool call until its repair
   budget ran out.
-- **What it can't fix:** every one of the 36 wrong agent answers comes from a wrong formula. No
-  tool call in those runs computed the right value. Both agents scored 0/7 on two templates: they
+- **What it can't fix:** 37 of the 38 wrong agent answers come from a wrong formula: no tool call
+  in those runs computed the right value. Both agents scored 0/7 on two templates: they
   subtract the delivery fee in "price × qty + fee", and drop the multiplication in
-  "boxes × size − sold". In 23 of the 36 the answer is exactly what the model's own expression
-  computes; in the other 13 the model also mis-reported the tool's result (e.g. dropped a minus
-  sign).
-- **Protocol matters:** the format the model was trained on beat a generic one by 8 problems,
-  in fewer calls. That's measured on one model; it's the default worth testing, not a law.
+  "boxes × size − sold". In 24 of the 38 the answer is exactly what the model's own expression
+  computes; in most of the rest the model also mis-reported the tool's result (e.g. dropped a
+  minus sign). The 38th is a grading artifact: the answer states the right number, then ends on
+  another one (the grader takes the last number).
+- **Protocol:** the format the model was trained on scored 6 problems more than a generic one, in
+  fewer calls, but at this sample size that isn't significant. It's the default worth testing,
+  not a law.
 
 Raw rows, transcripts and the analysis are in
-[`benchmarks/results/eval-agent/`](benchmarks/results/eval-agent/) (`analyze_eval.py` reproduces
+[`benchmarks/results/eval-agent/`](https://github.com/ragnarlothbrok53/slm-orchestration-machine/blob/main/benchmarks/results/eval-agent/) (`analyze_eval.py` reproduces
 the tests from `rows.csv`).
 
 ### 2. Crash recovery: no lost steps, recovery time set by the lease
@@ -201,7 +204,7 @@ submitted at once; ideal makespan 12.0 s. Two interleaved repetitions:
 - The first version of the retry policy had no jitter. Clients rejected together retried
   together, and the batch ran 4–6× slower still. That's why `RetryPolicy` jitters and treats
   `Retry-After` as a floor. The pre-fix result is kept in
-  [`results/overload-nojitter/`](benchmarks/results/overload-nojitter/).
+  [`results/overload-nojitter/`](https://github.com/ragnarlothbrok53/slm-orchestration-machine/blob/main/benchmarks/results/overload-nojitter/).
 
 ### 4. What durability costs
 
@@ -290,13 +293,13 @@ Real output of that command (Qwen2.5-0.5B on a laptop CPU):
 
 ```
 model> <tool_call>
-{{"name": "calculator", "arguments": {"expression": "23 * 17 - 4"}}
+{"name": "calculator", "arguments": {"expression": "23 * 17 - 4"}}
 </tool_call>
 tool> 387
 model> Priya pays 387 rupees for the pens.
 
 answered: Priya pays 387 rupees for the pens.
-[2 LLM calls, 1 tool calls, 706+40 tokens, 1.8s in the model]
+[2 LLM calls, 1 tool calls, 701+39 tokens, 1.8s in the model]
 ```
 
 The orchestration did its job: one well-formed tool call, the result, a clean answer, in 2 calls.
@@ -376,9 +379,9 @@ worker = Worker(Store("slom.db"), [Workflow.define("pipeline", pipeline)])
 
 ## Configuration
 
-Environment variables (prefix `SLOM_`), a `.env` file (see [`.env.example`](.env.example)), or CLI
+Environment variables (prefix `SLOM_`), a `.env` file (see [`.env.example`](https://github.com/ragnarlothbrok53/slm-orchestration-machine/blob/main/.env.example)), or CLI
 flags (`--db`, `--llm-url`, `--host`, `--port`), which take precedence. Full definitions, types
-and bounds are in [`config.py`](src/slom/config.py).
+and bounds are in [`config.py`](https://github.com/ragnarlothbrok53/slm-orchestration-machine/blob/main/src/slom/config.py).
 
 | Variable | Default | Meaning |
 |---|---|---|
@@ -405,7 +408,7 @@ uv run pytest                # 124 tests, ~30 s
 uv run ruff check . && uv run ruff format --check . && uv run mypy
 ```
 
-What the tests pin down ([`tests/`](tests/)):
+What the tests pin down ([`tests/`](https://github.com/ragnarlothbrok53/slm-orchestration-machine/blob/main/tests/)):
 
 - **Engine** (`test_engine.py`, `test_store.py`):
   - finished steps aren't re-executed on resume;
@@ -446,7 +449,7 @@ What the tests pin down ([`tests/`](tests/)):
 - removing the repeat guard;
 - a non-streaming client.
 
-CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs lint, format, strict mypy and all
+CI ([`.github/workflows/ci.yml`](https://github.com/ragnarlothbrok53/slm-orchestration-machine/blob/main/.github/workflows/ci.yml)) runs lint, format, strict mypy and all
 tests, and brings up the compose stack (slim-serve with the fake engine) to push a run through
 API → journal → worker → slim-serve and back.
 
@@ -460,7 +463,7 @@ uv run python benchmarks/eval_agent.py --llm-url http://127.0.0.1:8000   # real 
 ```
 
 Each writes `benchmarks/results/<name>/summary.json` (environment, commit, config, summary) and
-`rows.csv` (raw rows). Details and caveats are in [docs/benchmarking.md](docs/benchmarking.md).
+`rows.csv` (raw rows). Details and caveats are in [docs/benchmarking.md](https://github.com/ragnarlothbrok53/slm-orchestration-machine/blob/main/docs/benchmarking.md).
 
 ## Design tradeoffs
 
@@ -531,4 +534,4 @@ docs/         architecture.md · design-decisions.md · benchmarking.md
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT, see [LICENSE](https://github.com/ragnarlothbrok53/slm-orchestration-machine/blob/main/LICENSE).

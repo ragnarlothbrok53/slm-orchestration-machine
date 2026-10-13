@@ -1,7 +1,7 @@
 {
   "environment": {
-    "timestamp": "2026-10-09T16:31:36+0530",
-    "commit": "813bcd5",
+    "timestamp": "2026-10-13T19:02:50+0530",
+    "commit": "4cb8401",
     "dirty": false,
     "os": "Windows 11",
     "cpu": "Intel64 Family 6 Model 170 Stepping 4, GenuineIntel",
@@ -9,8 +9,7 @@
     "memory_gb": 31.5,
     "python": "3.13.4",
     "sqlite": "3.49.1",
-    "disk_note": "",
-    "note": "Started before 813bcd5 was committed, on a working tree whose src/ is identical to 813bcd5 (the harness then stamped the HEAD at finish time; fixed since). Later commits do not change prompts, parsing or the agent loop."
+    "disk_note": ""
   },
   "model": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
   "questions": 42,
@@ -27,11 +26,11 @@
     "runs_with_invalid_output": 0,
     "seconds": {
       "n": 42,
-      "mean": 6.524,
-      "p50": 5.745,
-      "p95": 12.579,
-      "p99": 16.941,
-      "max": 19.2
+      "mean": 7.431,
+      "p50": 6.84,
+      "p95": 15.944,
+      "p99": 18.886,
+      "max": 19.07
     }
   },
   "agent-json": {
@@ -46,30 +45,30 @@
     "runs_with_invalid_output": 7,
     "seconds": {
       "n": 42,
-      "mean": 6.515,
-      "p50": 5.79,
-      "p95": 11.458,
-      "p99": 12.486,
-      "max": 12.67
+      "mean": 7.046,
+      "p50": 6.115,
+      "p95": 11.533,
+      "p99": 18.2,
+      "max": 21.8
     }
   },
   "agent-qwen": {
-    "accuracy": 0.667,
-    "correct": "28/42",
-    "held_out_correct": "26/39",
+    "accuracy": 0.619,
+    "correct": "26/42",
+    "held_out_correct": "24/39",
     "status": {
       "answered": 42
     },
     "llm_calls_mean": 2.0,
-    "used_tool": 42,
-    "runs_with_invalid_output": 0,
+    "used_tool": 40,
+    "runs_with_invalid_output": 2,
     "seconds": {
       "n": 42,
-      "mean": 5.365,
-      "p50": 5.025,
-      "p95": 7.739,
-      "p99": 8.162,
-      "max": 8.17
+      "mean": 5.81,
+      "p50": 5.145,
+      "p95": 9.644,
+      "p99": 12.018,
+      "max": 13.26
     }
   }
 }
