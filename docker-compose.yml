@@ -20,8 +20,8 @@ x-slom: &slom
 
 services:
   slim-serve:
-    # The inference server from https://github.com/ragnarlothbrok53/slm-inference-engine
-    build: https://github.com/ragnarlothbrok53/slm-inference-engine.git#v0.1.0
+    # The inference server from https://github.com/ragnarlothbrok53/slm-inference-machine
+    build: https://github.com/ragnarlothbrok53/slm-inference-machine.git#v0.1.0
     environment:
       SLM_ENGINE: ${SLM_ENGINE:-llama_cpp}
       SLM_MODEL_PATH: /models/${MODEL_FILE:-qwen2.5-0.5b-instruct-q4_k_m.gguf}
@@ -46,12 +46,12 @@ services:
     <<: *slom
     command: ["slom", "worker"]
     environment:
-      SOF_LLM_BASE_URL: http://slim-serve:8000
+      SLOM_LLM_BASE_URL: http://slim-serve:8000
       # One LLM call in flight per worker; the default slim-serve has one replica.
-      SOF_LLM_CONCURRENCY: ${SLM_REPLICAS:-1}
+      SLOM_LLM_CONCURRENCY: ${SLM_REPLICAS:-1}
     depends_on:
       - slim-serve  # workers wait for its /readyz themselves before claiming runs
-    stop_grace_period: 15s  # > SOF_SHUTDOWN_GRACE_S, so runs are handed back, not killed
+    stop_grace_period: 15s  # > SLOM_SHUTDOWN_GRACE_S, so runs are handed back, not killed
 
 volumes:
   slom-data:

@@ -1,4 +1,4 @@
-"""Command line: ``slom serve | api | worker | run``. Flags override ``SOF_*`` variables."""
+"""Command line: ``slom serve | api | worker | run``. Flags override ``SLOM_*`` variables."""
 
 from __future__ import annotations
 
@@ -22,8 +22,8 @@ from .worker import agent_worker, serve_worker
 
 app = typer.Typer(no_args_is_help=True, add_completion=False, help=__doc__)
 
-Db = Annotated[str | None, typer.Option("--db", help="SQLite journal path [SOF_DB_PATH].")]
-LlmUrl = Annotated[str | None, typer.Option("--llm-url", help="LLM server [SOF_LLM_BASE_URL].")]
+Db = Annotated[str | None, typer.Option("--db", help="SQLite journal path [SLOM_DB_PATH].")]
+LlmUrl = Annotated[str | None, typer.Option("--llm-url", help="LLM server [SLOM_LLM_BASE_URL].")]
 
 
 def _settings(**overrides: Any) -> Settings:
@@ -36,8 +36,8 @@ def _settings(**overrides: Any) -> Settings:
 def serve(
     db: Db = None,
     llm_url: LlmUrl = None,
-    host: Annotated[str | None, typer.Option(help="[SOF_API_HOST]")] = None,
-    port: Annotated[int | None, typer.Option(help="[SOF_API_PORT]")] = None,
+    host: Annotated[str | None, typer.Option(help="[SLOM_API_HOST]")] = None,
+    port: Annotated[int | None, typer.Option(help="[SLOM_API_PORT]")] = None,
 ) -> None:
     """API and one worker in a single process: the simplest way to run SLOM."""
     settings = _settings(db=db, llm_url=llm_url, host=host, port=port)
@@ -54,8 +54,8 @@ def serve(
 @app.command("api")
 def api_only(
     db: Db = None,
-    host: Annotated[str | None, typer.Option(help="[SOF_API_HOST]")] = None,
-    port: Annotated[int | None, typer.Option(help="[SOF_API_PORT]")] = None,
+    host: Annotated[str | None, typer.Option(help="[SLOM_API_HOST]")] = None,
+    port: Annotated[int | None, typer.Option(help="[SLOM_API_PORT]")] = None,
 ) -> None:
     """The API alone; run workers separately with `slom worker`."""
     settings = _settings(db=db, host=host, port=port)

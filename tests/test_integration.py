@@ -34,8 +34,9 @@ async def submit(store: Store, run_id: str, **kw: object) -> None:
     await store.submit(run_id, WORKFLOW_NAME, TypeAdapter(AgentInput).dump_json(inp).decode())
 
 
-def sof_settings(tmp_path: Path, base: str, **kw: object) -> Settings:
-    return Settings(db_path=str(tmp_path / "slom.db"), llm_base_url=base, poll_interval_s=0.01, **kw)  # type: ignore[arg-type]
+def slom_settings(tmp_path: Path, base: str, **kw: object) -> Settings:
+    db = str(tmp_path / "slom.db")
+    return Settings(db_path=db, llm_base_url=base, poll_interval_s=0.01, **kw)  # type: ignore[arg-type]
 
 
 async def test_agent_end_to_end_with_correlated_request_ids(tmp_path: Path) -> None:
@@ -47,7 +48,7 @@ async def test_agent_end_to_end_with_correlated_request_ids(tmp_path: Path) -> N
     engine = ScriptedEngine()
     try:
         with slim_serve(engine) as base:
-            settings = sof_settings(tmp_path, base)
+            settings = slom_settings(tmp_path, base)
             store = Store(settings.db_path)
             await submit(store, "e2e")
             async with agent_worker(settings, store, Metrics()) as worker:
@@ -74,7 +75,7 @@ async def test_overload_503s_are_absorbed_by_retries(tmp_path: Path) -> None:
     engine = ScriptedEngine(token_latency_s=0.02)
     metrics = Metrics()
     with slim_serve(engine, replicas=1, max_queue_size=0) as base:
-        settings = sof_settings(tmp_path, base, llm_concurrency=4, max_concurrent_runs=4)
+        settings = slom_settings(tmp_path, base, llm_concurrency=4, max_concurrent_runs=4)
         store = Store(settings.db_path)
         for i in range(4):
             await submit(store, f"r{i}")
@@ -90,7 +91,7 @@ async def test_overload_503s_are_absorbed_by_retries(tmp_path: Path) -> None:
     rejected = re.search(r'slm_rejected_total\{reason="queue_full"\} (\S+)', server_metrics)
     assert rejected is not None and float(rejected.group(1)) > 0  # the server did shed load
     retries = sample_value(
-        metrics, "sof_step_retries_total", {"step": "llm", "error": "RetryableError"}
+        metrics, "slom_step_retries_total", {"step": "llm", "error": "RetryableError"}
     )
     assert retries == float(rejected.group(1))  # ...and every rejection was retried
     assert engine.calls == 8  # but each model call ran exactly once
@@ -99,7 +100,7 @@ async def test_overload_503s_are_absorbed_by_retries(tmp_path: Path) -> None:
 async def test_cancelling_a_run_stops_generation_on_the_server(tmp_path: Path) -> None:
     engine = ScriptedEngine(token_latency_s=0.01, max_text=" x")  # 1000 tokens = ~10s
     with slim_serve(engine) as base:
-        settings = sof_settings(tmp_path, base, lease_s=0.3)
+        settings = slom_settings(tmp_path, base, lease_s=0.3)
         store = Store(settings.db_path)
         await submit(store, "c1", max_tokens=1000)
         async with agent_worker(settings, store, Metrics()) as worker:

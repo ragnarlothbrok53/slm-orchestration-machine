@@ -56,7 +56,7 @@ async def test_invalid_output_is_repaired(store: Store) -> None:
     result = await result_of(store)
     assert result.status == "answered" and [s.kind for s in result.steps] == ["invalid", "answer"]
     assert "Your reply was invalid: no JSON object found" in llm.prompts[1]
-    assert sample_value(metrics, "sof_agent_invalid_outputs_total") == 1
+    assert sample_value(metrics, "slom_agent_invalid_outputs_total") == 1
 
 
 async def test_repairs_are_bounded(store: Store) -> None:
@@ -77,7 +77,7 @@ async def test_repeated_tool_call_is_not_executed_and_forces_an_answer(store: St
     assert "you already called calculator" in (result.steps[1].observation or "")
     assert llm.prompts[2].endswith('<|im_start|>assistant\n{"answer": "')
     assert (result.status, result.answer) == ("answered", "395")
-    assert sample_value(metrics, "sof_tool_calls_total", {"tool": "calculator", "ok": "true"}) == 1
+    assert sample_value(metrics, "slom_tool_calls_total", {"tool": "calculator", "ok": "true"}) == 1
 
 
 async def test_last_step_must_answer(store: Store) -> None:

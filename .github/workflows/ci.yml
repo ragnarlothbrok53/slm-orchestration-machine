@@ -18,12 +18,12 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-      # Dev deps include slm-runtime v0.1.0 (from GitHub) for the contract tests.
+      # Dev deps include slim-serve v0.1.0 for the contract tests.
       - run: uv sync --frozen
       - run: uv run ruff format --check src tests benchmarks
       - run: uv run ruff check src tests benchmarks
       - run: uv run mypy
-      # Unit, API, contract (real slm-runtime) and process-kill recovery tests.
+      # Unit, API, contract (real slim-serve) and process-kill recovery tests.
       - run: uv run pytest -v
 
   docker:
@@ -31,14 +31,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Start slm-runtime (fake engine), API and a worker
+      - name: Start slim-serve (fake engine), API and a worker
         env:
           SLM_ENGINE: fake  # no model download in CI: tests the wiring, not the model
         run: |
           mkdir -p models
           docker compose up -d --build --wait api
           docker compose up -d worker
-      - name: A run goes API -> journal -> worker -> slm-runtime -> journal -> API
+      - name: A run goes API -> journal -> worker -> slim-serve -> journal -> API
         run: |
           body=$(curl -fsS 'localhost:8080/v1/runs?wait=true&timeout_s=60' \
             -H 'content-type: application/json' -d '{"question": "2+2?", "max_repairs": 0}')
@@ -47,7 +47,7 @@ jobs:
           # repair-less attempt. The run itself must still complete through every component.
           echo "$body" | grep -q '"status":"completed"'
           echo "$body" | grep -q '"status":"max_repairs"'
-          curl -fsS localhost:8080/metrics | grep -q 'sof_runs{status="completed"} 1.0'
+          curl -fsS localhost:8080/metrics | grep -q 'slom_runs{status="completed"} 1.0'
       - if: failure()
         run: docker compose logs
       - if: always()

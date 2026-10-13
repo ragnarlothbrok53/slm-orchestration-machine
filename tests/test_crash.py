@@ -30,11 +30,11 @@ LEASE_S = 1.0
 def start_worker(db: Path, llm_url: str, log: Path) -> subprocess.Popen[bytes]:
     env = {
         **os.environ,
-        "SOF_DB_PATH": str(db),
-        "SOF_LLM_BASE_URL": llm_url,
-        "SOF_LEASE_S": str(LEASE_S),
-        "SOF_POLL_INTERVAL_S": "0.05",
-        "SOF_METRICS_PORT": "0",
+        "SLOM_DB_PATH": str(db),
+        "SLOM_LLM_BASE_URL": llm_url,
+        "SLOM_LEASE_S": str(LEASE_S),
+        "SLOM_POLL_INTERVAL_S": "0.05",
+        "SLOM_METRICS_PORT": "0",
     }
     out = log.open("wb")
     return subprocess.Popen(

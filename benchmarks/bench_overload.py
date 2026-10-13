@@ -1,4 +1,4 @@
-"""Backpressure against a real slim-serve server: what ``SOF_LLM_CONCURRENCY`` should be.
+"""Backpressure against a real slim-serve server: what ``SLOM_LLM_CONCURRENCY`` should be.
 
 slim-serve (started here as a subprocess, ``fake`` engine with a fixed per-call cost) admits at
 most ``replicas + queue`` requests and answers ``503 + Retry-After`` beyond that. SLOM submits a
@@ -118,7 +118,7 @@ async def one(args: argparse.Namespace, concurrency: int, tmp: Path, rep: int) -
     latencies = [r.updated_at - r.created_at for r in done.values()]
     retries = (
         metrics.registry.get_sample_value(
-            "sof_step_retries_total", {"step": "llm", "error": "RetryableError"}
+            "slom_step_retries_total", {"step": "llm", "error": "RetryableError"}
         )
         or 0.0
     )
@@ -131,7 +131,7 @@ async def one(args: argparse.Namespace, concurrency: int, tmp: Path, rep: int) -
         "run_latency_p50_s": round(summarize(latencies)["p50"], 2),
         "run_latency_p95_s": round(summarize(latencies)["p95"], 2),
         "server_503s": server_counter(server_metrics, "slm_rejected_total"),
-        "sof_retries": retries,
+        "slom_retries": retries,
         "server_ok_requests": server_counter(
             server_metrics, 'slm_requests_total\\{outcome="ok"\\}'
         ),

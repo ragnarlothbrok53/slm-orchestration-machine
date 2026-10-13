@@ -59,7 +59,7 @@ journal afterwards: its `sqlite` extension reads the file directly.
 
 **`FULL` vs `NORMAL`.** `NORMAL` survives process crashes but may lose the last commits on power
 loss. `FULL` is the default because "finished steps are never repaid" should also hold across a
-power cut; `SOF_DB_SYNCHRONOUS=NORMAL` trades that for cheaper commits.
+power cut; `SLOM_DB_SYNCHRONOUS=NORMAL` trades that for cheaper commits.
 
 **Where it breaks.**
 - *One host only:* SQLite's locking is unreliable on network filesystems, so workers must share
@@ -92,7 +92,7 @@ changes, or add a version field to the run. That's on the roadmap.
 ## 4. Leases with fencing tokens
 
 **Decision.**
-- A worker claims a run by setting `lease_until = now + SOF_LEASE_S` and incrementing
+- A worker claims a run by setting `lease_until = now + SLOM_LEASE_S` and incrementing
   `lease_token`, then renews the lease every `lease_s / 3`.
 - Every write a worker makes (step, finish, heartbeat) checks that `lease_token` is still its own,
   in the same transaction.
@@ -112,7 +112,7 @@ again after a p50 of 1.96 s with a 2 s lease, and 4.67 s with a 5 s lease, over 
 setting to tune: shorter means faster recovery and more heartbeat writes.
 
 **Poison runs.** `attempts` counts claims that didn't end in a clean hand-back. After
-`SOF_MAX_RUN_ATTEMPTS` the run is failed instead of being handed to yet another worker it might
+`SLOM_MAX_RUN_ATTEMPTS` the run is failed instead of being handed to yet another worker it might
 also kill (e.g. a tool that segfaults).
 
 ## 5. At-least-once steps, with an idempotency key
@@ -161,12 +161,12 @@ not oversubscribed. With jitter it took 29–30 s. The pre-jitter result is kept
 | connection error, client timeout | retry with backoff |
 | in-band `data: {"error": ...}`, stream ends without `finish_reason` | retry |
 
-`SOF_LLM_MAX_ATTEMPTS=8` gives 7 waits that add up to 45–90 s, enough to ride out a model-server
+`SLOM_LLM_MAX_ATTEMPTS=8` gives 7 waits that add up to 45–90 s, enough to ride out a model-server
 restart. This is pinned by a test.
 
 ## 8. Client-side LLM concurrency matched to server capacity
 
-**Decision.** Each worker caps its in-flight model calls (`SOF_LLM_CONCURRENCY`, default 1, the
+**Decision.** Each worker caps its in-flight model calls (`SLOM_LLM_CONCURRENCY`, default 1, the
 slim-serve default replica count). Calls beyond the cap wait in the worker. The per-attempt
 deadline starts only once a slot is acquired.
 
@@ -191,7 +191,7 @@ also risks 504s; waiting on the client side doesn't.
    detects the disconnect and stops generating within about one token. A non-streaming request
    would keep a replica busy until `max_tokens`. This is tested against the real server in
    `test_cancelling_a_run_stops_generation_on_the_server`.
-2. **Client-side TTFT is observable** (`sof_llm_ttft_seconds`), which separates time queued plus
+2. **Client-side TTFT is observable** (`slom_llm_ttft_seconds`), which separates time queued plus
    prefill from decode.
 
 ## 10. Two prompt protocols, chosen by measurement
@@ -232,11 +232,11 @@ roadmap.
 - **API readiness means "the journal answers"**, not "a model is loaded". Runs can be accepted
   while the model loads; they stay `pending`. Workers wait for the LLM's `/readyz` before claiming
   anything, so they don't burn retries during a model load.
-- **Polling.** Idle workers poll for claimable runs every `SOF_POLL_INTERVAL_S` (0.2 s), which
+- **Polling.** Idle workers poll for claimable runs every `SLOM_POLL_INTERVAL_S` (0.2 s), which
   costs one indexed query. Postgres would use `LISTEN/NOTIFY`; for SQLite on one host, polling is
   the simple correct option. `?wait=true` on the API also polls the journal.
 - **Metrics only count live work.** Steps served from the journal increment
-  `sof_steps_replayed_total` and nothing else, so recovery doesn't inflate latency, token or error
+  `slom_steps_replayed_total` and nothing else, so recovery doesn't inflate latency, token or error
   metrics. Workflow-level metrics (invalid outputs, agent outcomes) are guarded by
   `ctx.replaying`.
 - **No distributed tracing yet.** Instead, the journal's step identity is propagated as

@@ -134,9 +134,9 @@ async def test_probes_and_metrics(tmp_path: Path) -> None:
         ready = await client.get("/readyz")
         assert ready.status_code == 200 and ready.json()["runs"] == {"completed": 1}
         text = (await client.get("/metrics")).text
-        assert 'sof_runs{status="completed"} 1.0' in text
-        assert 'sof_runs_finished_total{outcome="completed"} 1.0' in text  # embedded worker
-        assert 'sof_agent_runs_total{status="answered"} 1.0' in text
+        assert 'slom_runs{status="completed"} 1.0' in text
+        assert 'slom_runs_finished_total{outcome="completed"} 1.0' in text  # embedded worker
+        assert 'slom_agent_runs_total{status="answered"} 1.0' in text
 
 
 async def test_serve_mode_is_unready_if_the_embedded_worker_dies(tmp_path: Path) -> None:

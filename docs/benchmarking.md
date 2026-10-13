@@ -27,7 +27,7 @@ machines. Compare the *ratios* within a benchmark, which were stable.
 - *Throughput:* 60 runs × 20 steps, with up to 1, 8 or 32 runs in flight in one worker, repeated
   3 times. Reported as steps per second.
 
-Both `SOF_DB_SYNCHRONOUS` modes are measured.
+Both `SLOM_DB_SYNCHRONOUS` modes are measured.
 
 **Caveat.** Sub-millisecond timings on this host vary between sessions: an earlier session
 (before benchmark logging was turned down to WARNING) measured `NORMAL` at 0.24–0.86 ms p50.

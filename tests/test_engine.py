@@ -157,8 +157,8 @@ async def test_resume_after_crash_replays_finished_steps_without_rerunning(
     assert run is not None and run.status == "completed" and run.output == "20"
     assert probe.calls == {"point": 1, "double": 1}  # step 0 came from the journal
     m = worker.metrics
-    assert sample_value(m, "sof_steps_replayed_total", {"step": "double"}) == 1
-    assert sample_value(m, "sof_run_claims_total", {"kind": "resumed"}) == 1
+    assert sample_value(m, "slom_steps_replayed_total", {"step": "double"}) == 1
+    assert sample_value(m, "slom_run_claims_total", {"kind": "resumed"}) == 1
 
 
 async def test_retryable_errors_are_retried_honouring_retry_after(store: Store) -> None:
@@ -176,7 +176,7 @@ async def test_retryable_errors_are_retried_honouring_retry_after(store: Store) 
     assert elapsed >= 0.2  # two waits of Retry-After=0.1s, although the backoff says 0.01s
     assert (
         sample_value(
-            worker.metrics, "sof_step_retries_total", {"step": "flaky", "error": "RetryableError"}
+            worker.metrics, "slom_step_retries_total", {"step": "flaky", "error": "RetryableError"}
         )
         == 2
     )
@@ -282,7 +282,7 @@ async def test_zombie_worker_stops_when_its_lease_is_taken(store: Store, clock: 
         zombie.stop()
         await task
     assert probe.cancelled
-    assert sample_value(zombie.metrics, "sof_leases_lost_total") == 1
+    assert sample_value(zombie.metrics, "slom_leases_lost_total") == 1
     run = await store.get("r1")
     assert run is not None and run.status == "running" and run.lease_token == 2  # untouched
 
@@ -316,7 +316,7 @@ async def test_concurrency_limit(store: Store) -> None:
         await asyncio.wait_for(probe.started.wait(), 5)
         await asyncio.sleep(0.2)
         assert probe.calls["block"] == 2
-        assert sample_value(worker.metrics, "sof_runs_active") == 2
+        assert sample_value(worker.metrics, "slom_runs_active") == 2
         probe.release.set()
         for i in range(5):
             await wait_for(store, f"r{i}")

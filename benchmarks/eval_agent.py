@@ -10,7 +10,7 @@ Modes, all against the same slim-serve server and model, greedy decoding (temper
 Agents run through the full stack (journal, worker, retries), not a shortcut. Grading: the last
 number in the final answer must equal the expected integer.
 
-Requires a running slim-serve with a real model, e.g. in the slm-inference-engine repo:
+Requires a running slim-serve with a real model, e.g. in the slm-inference-machine repo:
 
     uv run slim-serve serve            # Qwen2.5-0.5B-Instruct Q4_K_M by default
     uv run python benchmarks/eval_agent.py --llm-url http://127.0.0.1:8000
