@@ -3,6 +3,12 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/).
 
+## [0.1.1] - 2026-10-13
+
+### Changed
+- Shorter PyPI project description (`PYPI.md`) that links back to the full README on GitHub.
+  No code changes.
+
 ## [0.1.0] - 2026-10-13
 
 First release, published to PyPI as `slom` (the project was previously named SOF). It replaces

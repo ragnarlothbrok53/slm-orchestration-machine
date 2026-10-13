@@ -1,8 +1,8 @@
 [project]
 name = "slom"
-version = "0.1.0"
+version = "0.1.1"
 description = "Durable, tool-using agents for small language models, with a SQLite-journaled execution engine."
-readme = "README.md"
+readme = "PYPI.md"
 license = "MIT"
 requires-python = ">=3.11"
 keywords = ["llm", "agents", "durable-execution", "workflow", "sqlite", "tool-calling", "small-language-models"]

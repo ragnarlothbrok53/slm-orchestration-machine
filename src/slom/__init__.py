@@ -14,7 +14,7 @@ from .engine import (
 from .store import Store
 from .tools import BUILTIN_TOOLS, Tool, ToolError, ToolRegistry, idempotency_key, tool
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 __all__ = [
     "BUILTIN_TOOLS",
